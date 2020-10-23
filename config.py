@@ -1,3 +1,9 @@
+import os
+
+project_root = os.path.dirname(os.path.realpath(__file__))
+log_dir = os.path.join(project_root, "logs")
+
+
 data_paths = {
         "CT0": "/media/david/DATA/Covid-Data/COVID19_1110/studies/CT-0",
         "CT1": "/media/david/DATA/Covid-Data/COVID19_1110/studies/CT-1",
