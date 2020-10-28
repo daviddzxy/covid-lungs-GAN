@@ -1,4 +1,4 @@
-from torch import nn, cat
+from torch import nn
 
 
 class DoubleConv(nn.Module):
