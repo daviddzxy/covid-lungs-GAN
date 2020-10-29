@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+from torch import from_numpy
 
 
 class PadVolume:
@@ -7,7 +8,7 @@ class PadVolume:
     Pads volume with zeros.
     """
 
-    def __init__(self, dimensions=(512, 512, 58)):
+    def __init__(self, dimensions):
         """
         :param dimensions: Output dimensions(H_out, W_out, D_out) of padded volume.
         """
@@ -85,6 +86,39 @@ class ApplyMask:
         :param volume: Volume of size (H_in, W_in, D_in) to be masked.
         :param mask: Mask of size (H_in, W_in, D_in), which contains nonzero elements,
                      which will be used to keep relevant infromation in volume.
-        :return:
+        :return: Returns masked volume.
         """
         return np.where(mask == 0, mask, volume)
+
+
+class ToTensor:
+    """
+    Transforms numpy array to tensor.
+    """
+    def __call__(self, ndarray):
+        """
+        :param ndarray: If ndarray is of size (H_in, W_in), then ndarray is transformed into (C_out=1, H_out, W_out).
+                        If ndarray is of size (H_in, W_in, D_in), then ndarray is transformed
+                        into (C_out=1, D_out, H_out, W_out).
+        :return: Returns corresponding tensor, which is compatible with conv2d or conv3d torch modules.
+        """
+        if len(ndarray.shape) == 2:
+            image = ndarray[np.newaxis, :, :]
+            return from_numpy(image)
+
+        if len(ndarray.shape) == 3:
+            volume = ndarray.transpose(2, 0, 1)
+            volume = volume[np.newaxis, :, :, :]
+            return from_numpy(volume)
+
+
+class Scale:
+    """
+    Scale nd array between values [out_min, out_max].
+    """
+    def __init__(self, out_min, out_max):
+        self.out_min = out_min
+        self.out_max = out_max
+
+    def __call__(self, ndarray):
+        return (self.out_max - self.out_min) * ((ndarray - np.min(ndarray)) / (np.max(ndarray))) + self.out_min

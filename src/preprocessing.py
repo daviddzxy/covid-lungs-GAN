@@ -16,7 +16,7 @@ if __name__ == '__main__':
                         filemode='w',
                         level=logging.INFO,
                         force=True)
-    
+
     apply_mask = ApplyMask()
     resample = ResampleVolume(new_spacing=(1, 1, 8))
     for key, path in config.data_paths.items():
