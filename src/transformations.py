@@ -112,14 +112,10 @@ class ToTensor:
             return from_numpy(volume)
 
 
-class Scale:
+class Normalize:
     """
-    Scale nd array between values [out_min, out_max].
+    Normalize ndarray between values -1, 1
     """
-
-    def __init__(self, out_min, out_max):
-        self.out_min = out_min
-        self.out_max = out_max
 
     def __call__(self, ndarray):
-        return (self.out_max - self.out_min) * ((ndarray - np.min(ndarray)) / (np.max(ndarray))) + self.out_min
+        return (ndarray - np.mean(ndarray)) / (np.max(ndarray) - np.min(ndarray))
