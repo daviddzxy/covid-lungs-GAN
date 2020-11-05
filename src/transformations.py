@@ -12,7 +12,7 @@ class PadVolume:
         """
         :param dimensions: Output dimensions(H_out, W_out, D_out) of padded volume.
         """
-        assert len(dimensions.shape) == 3
+        assert len(dimensions) == 3
         self.dimensions = dimensions
 
     def __call__(self, volume):
@@ -27,12 +27,9 @@ class PadVolume:
         pad1, pad2, pad3 = int(pad1 / 2), int(pad2 / 2), int(pad3 / 2)
         odd1, odd2, odd3 = 0, 0, 0
 
-        if pad1 // 2:
-            odd1 = 1
-        if pad2 // 2:
-            odd2 = 1
-        if pad3 // 2:
-            odd3 = 1
+        odd1 = 1 if pad1 % 2 else odd1
+        odd2 = 1 if pad2 % 2 else odd2
+        odd3 = 1 if pad3 % 2 else odd3
 
         return np.pad(volume, ((pad1, pad1 + odd1), (pad2, pad2 + odd2), (pad3, pad3 + odd3)), mode='constant')
 
@@ -57,6 +54,7 @@ class ResampleVolume:
     Resample volume to different voxel_spacing.
     Voxel spacing (1, 1, 1) means that one pixel represents volume of 1x1x1mm in real world.
     """
+
     def __init__(self, new_spacing):
         """
         :param new_spacing: new_spacing has to be a tuple of length 3.
@@ -81,6 +79,7 @@ class ApplyMask:
     """
     Applies mask to volume.
     """
+
     def __call__(self, volume, mask):
         """
         :param volume: Volume of size (H_in, W_in, D_in) to be masked.
@@ -95,6 +94,7 @@ class ToTensor:
     """
     Transforms numpy array to tensor.
     """
+
     def __call__(self, ndarray):
         """
         :param ndarray: If ndarray is of size (H_in, W_in), then ndarray is transformed into (C_out=1, H_out, W_out).
@@ -116,6 +116,7 @@ class Scale:
     """
     Scale nd array between values [out_min, out_max].
     """
+
     def __init__(self, out_min, out_max):
         self.out_min = out_min
         self.out_max = out_max
