@@ -6,7 +6,7 @@ import pickle
 import config
 import numpy as np
 from lungmask import mask
-from src.transformations import ResampleVolume, ApplyMask
+from transformations import ResampleVolume, ApplyMask
 
 if __name__ == '__main__':
     os.sys.path.append(config.project_root)
