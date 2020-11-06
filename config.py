@@ -18,3 +18,5 @@ preprocessed_data_paths = {
         "CT3": "/media/david/DATA/Covid-Data/Preprocessed_data/CT3",
         "CT4": "/media/david/DATA/Covid-Data/Preprocessed_data/CT4"
         }
+
+padding_shape = [512, 512, 64]
