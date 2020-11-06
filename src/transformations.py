@@ -27,11 +27,12 @@ class PadVolume:
         pad1, pad2, pad3 = int(pad1 / 2), int(pad2 / 2), int(pad3 / 2)
         odd1, odd2, odd3 = 0, 0, 0
 
-        odd1 = 1 if pad1 % 2 else odd1
-        odd2 = 1 if pad2 % 2 else odd2
-        odd3 = 1 if pad3 % 2 else odd3
+        odd1 = 1 if volume.shape[0] % 2 else odd1
+        odd2 = 1 if volume.shape[1] % 2 else odd2
+        odd3 = 1 if volume.shape[2] % 2 else odd3
 
-        return np.pad(volume, ((pad1, pad1 + odd1), (pad2, pad2 + odd2), (pad3, pad3 + odd3)), mode='constant')
+        padded = np.pad(volume, ((pad1, pad1 + odd1), (pad2, pad2 + odd2), (pad3, pad3 + odd3)), mode='constant')
+        return padded
 
 
 class GetMiddleLungSlice:
