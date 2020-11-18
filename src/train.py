@@ -8,27 +8,53 @@ from discriminators import BaseDiscriminator
 from matplotlib import pyplot as plt
 from utils import weights_init, denormalize
 import config
+import argparse
+
+
+parser = argparse.ArgumentParser("Training script.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-e", "--epochs", default=20, type=int, help="Set number of epochs.")
+parser.add_argument("-b", "--batch-size", default=2, type=int, help="Set batch size.")
+parser.add_argument("--gpu", default=True, nargs="?", help="Use graphics card during training.")
+parser.add_argument("--learning-rate-generators", default=0.0002, type=float, help="Set learning rate of "
+                                                                                           "Generators.")
+parser.add_argument("--learning-rate-discriminator-a", default=0.0002, type=float, help="Set learning rate "
+                                                                                                 "of Discriminator A.")
+parser.add_argument("--learning-rate-discriminator-b", default=0.0002, type=float, help="Set learning rate "
+                                                                                                 "of Discriminator B.")
+parser.add_argument("--filters-generators", default=2, type=int, help="Set multiplier of convolutional filters "
+                                                                            "in generators.")
+parser.add_argument("--filters-discriminators", default=2, type=int, help="Set multiplier of convolutional "
+                                                                                "filters in discriminators.")
+parser.add_argument("--convolutional-layers-discriminators", default=2, type=int, help="Set number of "
+                                                                                              "convolutional layers "
+                                                                                              "in discriminator.")
+
+args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
 
 dataset = CycleGanDataset()
-dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=1, drop_last=True)
+dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
-device = torch.device("cuda:0")
+device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
-netG_A2B = UnetGenerator2D(6).to(device).apply(weights_init)
-netG_B2A = UnetGenerator2D(6).to(device).apply(weights_init)
-netD_A = BaseDiscriminator(4, 6).to(device).apply(weights_init)
-netD_B = BaseDiscriminator(4, 6).to(device).apply(weights_init)
+netG_A2B = UnetGenerator2D(args.filters_generators).to(device).apply(weights_init)
+netG_B2A = UnetGenerator2D(args.filters_generators).to(device).apply(weights_init)
+netD_A = BaseDiscriminator(
+    args.filters_discriminators, args.convolutional_layers_discriminators).to(device).apply(weights_init)
+netD_B = BaseDiscriminator(
+    args.filters_discriminators, args.convolutional_layers_discriminators).to(device).apply(weights_init)
 
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
 
-optimizer_G = torch.optim.Adam(itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()),
-                               lr=0.0002, betas=(0.5, 0.999))
-optimizer_D_A = torch.optim.Adam(netD_A.parameters(), lr=0.0002, betas=(0.5, 0.999))
-optimizer_D_B = torch.optim.Adam(netD_B.parameters(), lr=0.0002, betas=(0.5, 0.999))
+optimizer_G = torch.optim.Adam(
+    itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators, betas=(0.5, 0.999))
+optimizer_D_A = torch.optim.Adam(
+    netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
+optimizer_D_B = torch.optim.Adam(
+    netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
 
 g_losses = []
 d_losses = []
@@ -37,9 +63,8 @@ identity_losses = []
 gan_losses = []
 cycle_losses = []
 
-for epoch in range(0, 1):
+for epoch in range(0, args.epochs):
     for i, data in enumerate(dataloader):
-        print('loop')
         real_A, real_B = data
         real_A, real_B = real_A.float().to(device), real_B.float().to(device)
 
