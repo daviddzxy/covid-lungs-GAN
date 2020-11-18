@@ -1,33 +1,37 @@
 import os
 import torch
 import itertools
+from datetime import datetime
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D
 from discriminators import BaseDiscriminator
-from matplotlib import pyplot as plt
 from utils import weights_init, denormalize
+from matplotlib import pyplot as plt
 import config
 import argparse
 
 
+start_time = datetime.today().strftime('%d-%m-%Y-%H:%M:%S')
+writer = SummaryWriter(log_dir=config.training_logs + start_time)
 parser = argparse.ArgumentParser("Training script.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-e", "--epochs", default=20, type=int, help="Set number of epochs.")
 parser.add_argument("-b", "--batch-size", default=2, type=int, help="Set batch size.")
 parser.add_argument("--gpu", default=True, nargs="?", help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generators", default=0.0002, type=float, help="Set learning rate of "
-                                                                                           "Generators.")
+                                                                                   "Generators.")
 parser.add_argument("--learning-rate-discriminator-a", default=0.0002, type=float, help="Set learning rate "
-                                                                                                 "of Discriminator A.")
+                                                                                        "of Discriminator A.")
 parser.add_argument("--learning-rate-discriminator-b", default=0.0002, type=float, help="Set learning rate "
-                                                                                                 "of Discriminator B.")
+                                                                                        "of Discriminator B.")
 parser.add_argument("--filters-generators", default=2, type=int, help="Set multiplier of convolutional filters "
-                                                                            "in generators.")
+                                                                      "in generators.")
 parser.add_argument("--filters-discriminators", default=2, type=int, help="Set multiplier of convolutional "
-                                                                                "filters in discriminators.")
+                                                                          "filters in discriminators.")
 parser.add_argument("--convolutional-layers-discriminators", default=2, type=int, help="Set number of "
-                                                                                              "convolutional layers "
-                                                                                              "in discriminator.")
+                                                                                       "convolutional layers "
+                                                                                       "in discriminator.")
 
 args = parser.parse_args()
 
@@ -55,9 +59,6 @@ optimizer_D_A = torch.optim.Adam(
     netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
 optimizer_D_B = torch.optim.Adam(
     netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
-
-g_losses = []
-d_losses = []
 
 identity_losses = []
 gan_losses = []
@@ -154,9 +155,23 @@ for epoch in range(0, args.epochs):
         # Update D_B weights
         optimizer_D_B.step()
 
+        # Logging
+        writer.add_scalar("Loss/Generator Error", errG, i)
+        writer.add_scalar("Loss/DiscriminatorA Error", errD_A, i)
+        writer.add_scalar("Loss/DiscriminatorB Error", errD_B, i)
+
         f = plt.figure()
         f.add_subplot(1, 2, 1)
         plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
         f.add_subplot(1, 2, 2)
         plt.imshow(denormalize(fake_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-        plt.show(block=True)
+        writer.add_figure("Image outputs/A to B", f, i)
+        f = plt.figure()
+        f.add_subplot(1, 2, 1)
+        plt.imshow(denormalize(real_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+        f.add_subplot(1, 2, 2)
+        plt.imshow(denormalize(fake_image_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+        writer.add_figure("Image outputs/B to A", f, i)
+
+writer.flush()
+writer.close()
