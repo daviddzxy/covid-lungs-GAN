@@ -6,29 +6,18 @@ from datasets import CycleGanDataset
 from generators import UnetGenerator2D
 from discriminators import BaseDiscriminator
 from matplotlib import pyplot as plt
+from utils import weights_init, denormalize
 import config
 
 os.sys.path.append(config.project_root)
 
-
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv2d") != -1:
-        torch.nn.init.normal_(m.weight, 0.0, 0.02)
-    elif classname.find("BatchNorm") != -1:
-        torch.nn.init.normal_(m.weight, 1.0, 0.02)
-        torch.nn.init.zeros_(m.bias)
-
-def denormalize(image):
-    return ((image + 1) / 2) * 255
-
 dataset = CycleGanDataset()
-dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=2, drop_last=True)
+dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=1, drop_last=True)
 
 device = torch.device("cuda:0")
 
-netG_A2B = UnetGenerator2D(4).to(device).apply(weights_init)
-netG_B2A = UnetGenerator2D(4).to(device).apply(weights_init)
+netG_A2B = UnetGenerator2D(6).to(device).apply(weights_init)
+netG_B2A = UnetGenerator2D(6).to(device).apply(weights_init)
 netD_A = BaseDiscriminator(4, 6).to(device).apply(weights_init)
 netD_B = BaseDiscriminator(4, 6).to(device).apply(weights_init)
 
