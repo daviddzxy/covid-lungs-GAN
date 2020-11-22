@@ -22,19 +22,18 @@ resample = ResampleVolume(new_spacing=(1, 1, 8))
 for key, path in config.data_paths.items():
     for f in os.listdir(path):
         logging.info("Preprocessing of file {} started".format(f))
-        sitk_img = sitk.ReadImage(os.path.join(path, f))
-        nib_img = nib.load(os.path.join(path, f))
-        img = nib_img.get_fdata().transpose(1, 0, 2)
-        img_s = mask.apply(sitk_img, batch_size=1, noHU=False).transpose(1, 2, 0)
-        img, resize_factor = resample(img, nib_img.header["pixdim"][1:4])
-        img_s, _ = resample(img_s, nib_img.header["pixdim"][1:4])
-        img = apply_mask(img, img_s)
-        img, img_s = pad_volume(img), pad_volume(img_s)
-        img, img_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)
-        logging.info("Volume shape before resampling: {}, volume shape after resampling {}".format(
-            nib_img.get_fdata().shape, img.shape)
-        )
-        with open(os.path.join(config.preprocessed_data_paths[key], f.split(".")[0] + ".pkl"), "wb") as handle:
-            pickle.dump({"data": img, "mask": img_s, "resize_factor": resize_factor}, handle)
-        logging.info("Preprocessing of file {} finished".format(f))
-
+        try:
+            sitk_img = sitk.ReadImage(os.path.join(path, f))
+            nib_img = nib.load(os.path.join(path, f))
+            img = nib_img.get_fdata().transpose(1, 0, 2)
+            img_s = mask.apply(sitk_img, batch_size=1, noHU=False).transpose(1, 2, 0)
+            img, resize_factor = resample(img, nib_img.header["pixdim"][1:4])
+            img_s, _ = resample(img_s, nib_img.header["pixdim"][1:4])
+            img = apply_mask(img, img_s)
+            img, img_s = pad_volume(img), pad_volume(img_s)
+            img, img_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)
+            with open(os.path.join(config.preprocessed_data_paths[key], f.split(".")[0] + ".pkl"), "wb") as handle:
+                pickle.dump({"data": img, "mask": img_s, "resize_factor": resize_factor}, handle)
+        except Exception as err:
+            logging.error("Error occured while preprocessing file {}, error: {}".format(f, err))
+            pass
