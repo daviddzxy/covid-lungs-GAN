@@ -18,7 +18,6 @@ logging.basicConfig(filename=os.path.join(config.preprocessing_logs, "preprocess
 apply_mask = ApplyMask()
 pad_volume = PadVolume(config.padding_shape)
 get_middle_lung_slice = GetMiddleLungSlice()
-
 resample = ResampleVolume(new_spacing=(1, 1, 8))
 for key, path in config.data_paths.items():
     for f in os.listdir(path):

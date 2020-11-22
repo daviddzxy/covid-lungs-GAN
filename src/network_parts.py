@@ -3,12 +3,12 @@ from torch import nn, cat
 
 class Conv(nn.Module):
     #TODO add Instance norm option
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, norm=True, activ='relu'):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, norm=True, activ="relu"):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
-        if activ == 'relu':
+        if activ == "relu":
             self.activ = nn.ReLU(inplace=True)
-        elif activ == 'tanh':
+        elif activ == "tanh":
             self.activ = nn.Tanh()
         else:
             self.activ = None
@@ -46,10 +46,10 @@ class UpSampling(nn.Module):
                                                                             stride,
                                                                             padding,
                                                                             norm=False,
-                                                                            activ='tanh')
+                                                                            activ="tanh")
         )
         if outermost is False:
-            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         else:
             self.up = None
 
