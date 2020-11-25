@@ -19,7 +19,7 @@ apply_mask = ApplyMask()
 pad_volume = PadVolume(config.padding_shape)
 get_middle_lung_slice = GetMiddleLungSlice()
 resample = ResampleVolume(new_spacing=(1, 1, 8))
-for key, path in config.data_paths.items():
+for key, path in config.data.items():
     for f in os.listdir(path):
         logging.info("Preprocessing of file {} started".format(f))
         try:
@@ -32,8 +32,7 @@ for key, path in config.data_paths.items():
             img = apply_mask(img, img_s)
             img, img_s = pad_volume(img), pad_volume(img_s)
             img, img_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)
-            with open(os.path.join(config.preprocessed_data_paths[key], f.split(".")[0] + ".pkl"), "wb") as handle:
+            with open(os.path.join(config.preprocessed_data[key], f.split(".")[0] + ".pkl"), "wb") as handle:
                 pickle.dump({"data": img, "mask": img_s, "resize_factor": resize_factor}, handle)
         except Exception as err:
             logging.error("Error occured while preprocessing file {}, error: {}".format(f, err))
-            pass

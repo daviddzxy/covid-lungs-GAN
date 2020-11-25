@@ -7,14 +7,14 @@ from torch.utils.data import Dataset
 
 class CycleGanDataset(Dataset):
     def __init__(self):
-        self.paths_CT0 = os.listdir(config.preprocessed_data_paths["CT0"])
-        self.paths_CT3 = os.listdir(config.preprocessed_data_paths["CT3"])
+        self.paths_A = os.listdir(config.training_data["A"])
+        self.paths_B = os.listdir(config.preprocessed_data["B"])
         self.normalize = Normalize()
         self.to_tensor = ToTensor()
 
     def __getitem__(self, index):
-        file_handler_CT0 = open(os.path.join(config.preprocessed_data_paths["CT0"], self.paths_CT0[index % len(self.paths_CT0)]), "rb")
-        file_handler_CT3 = open(os.path.join(config.preprocessed_data_paths["CT3"], self.paths_CT3[index % len(self.paths_CT3)]), "rb")
+        file_handler_CT0 = open(os.path.join(config.training_data["CT0"], self.paths_A[index % len(self.paths_A)]), "rb")
+        file_handler_CT3 = open(os.path.join(config.training_data["CT3"], self.paths_B[index % len(self.paths_B)]), "rb")
         image_CT0 = pickle.load(file_handler_CT0)["data"]
         image_CT3 = pickle.load(file_handler_CT3)["data"]
         image_CT0, image_CT3 = self.normalize(image_CT0), self.normalize(image_CT3)
@@ -24,4 +24,4 @@ class CycleGanDataset(Dataset):
         return image_CT0, image_CT3
 
     def __len__(self):
-        return max(len(self.paths_CT0), len(self.paths_CT3))
+        return max(len(self.paths_A), len(self.paths_B))
