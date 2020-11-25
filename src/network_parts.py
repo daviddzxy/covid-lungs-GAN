@@ -1,8 +1,7 @@
-from torch import nn, cat
+from torch import nn
 
 
 class Conv(nn.Module):
-    #TODO add Instance norm option
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding, norm=True, activ="relu"):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
@@ -10,6 +9,8 @@ class Conv(nn.Module):
             self.activ = nn.ReLU(inplace=True)
         elif activ == "tanh":
             self.activ = nn.Tanh()
+        elif activ == "leaky":
+            self.activ = nn.LeakyReLU(0.2, inplace=True)
         else:
             self.activ = None
         self.norm = nn.BatchNorm2d(out_channels) if norm else None
@@ -21,43 +22,20 @@ class Conv(nn.Module):
         return x
 
 
-class DownSampling(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
-        super().__init__()
-        self.block = nn.Sequential(
-            Conv(in_channels, out_channels, kernel_size, stride, padding),
-            Conv(out_channels, out_channels, kernel_size, stride, padding),
-            nn.MaxPool2d(2)
-        )
+class DoubleConv(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, outermost=False):
+        super(DoubleConv, self).__init__()
+        self.conv1 = Conv(in_channels, in_channels, kernel_size, stride, padding)
+        self.conv2 = Conv(in_channels, out_channels, kernel_size, stride, padding) if outermost is False else Conv(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride,
+            padding,
+            norm=False,
+            activ="tanh")
 
     def forward(self, x):
-        return self.block(x)
-
-
-class UpSampling(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding, outermost=False):
-        super().__init__()
-        self.block = nn.Sequential(
-            Conv(in_channels, out_channels, kernel_size, stride, padding),
-            Conv(out_channels, out_channels, kernel_size, stride, padding) if outermost is False else Conv(
-                                                                            out_channels,
-                                                                            out_channels,
-                                                                            kernel_size,
-                                                                            stride,
-                                                                            padding,
-                                                                            norm=False,
-                                                                            activ="tanh")
-        )
-        if outermost is False:
-            self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-        else:
-            self.up = None
-
-    def forward(self, x1, x2):
-        if x2 is not None:
-            assert x1.shape[1] == x2.shape[1]
-            x1 = cat((x1, x2), dim=1)
-
-        x = self.block(x1)
-        x = self.up(x) if self.up is not None else x
+        x = self.conv1(x)
+        x = self.conv2(x)
         return x

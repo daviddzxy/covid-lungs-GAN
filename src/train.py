@@ -21,9 +21,9 @@ parser.add_argument("-b", "--batch-size", default=2, type=int, help="Set batch s
 parser.add_argument("--gpu", default=True, nargs="?", help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generators", default=0.0002, type=float, help="Set learning rate of "
                                                                                    "Generators.")
-parser.add_argument("--learning-rate-discriminator-a", default=0.0002, type=float, help="Set learning rate "
+parser.add_argument("--learning-rate-discriminator-a", default=0.00002, type=float, help="Set learning rate "
                                                                                         "of Discriminator A.")
-parser.add_argument("--learning-rate-discriminator-b", default=0.0002, type=float, help="Set learning rate "
+parser.add_argument("--learning-rate-discriminator-b", default=0.00002, type=float, help="Set learning rate "
                                                                                         "of Discriminator B.")
 parser.add_argument("--filters-generators", default=2, type=int, help="Set multiplier of convolutional filters "
                                                                       "in generators.")
@@ -164,6 +164,7 @@ for epoch in range(0, args.epochs):
         total_batch_counter += 1
 
     f = plt.figure()
+    f.tight_layout()
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 2)
@@ -173,6 +174,7 @@ for epoch in range(0, args.epochs):
     writer.add_figure("Image outputs/A to B to A", f, epoch)
 
     f = plt.figure()
+    f.tight_layout()
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 2)
