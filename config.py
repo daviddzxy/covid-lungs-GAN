@@ -21,8 +21,8 @@ preprocessed_data = {
         }
 
 training_data = {
-        "A": "/media/david/DATA/Covid-Data/A",
-        "B": "/media/david/DATA/Covid-Data/B"
+        "A": "/media/david/DATA/Covid-Data/Training_data/A",
+        "B": "/media/david/DATA/Covid-Data/Training_data/B"
 }
 
 padding_shape = [512, 512, 64]

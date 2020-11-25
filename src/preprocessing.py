@@ -21,7 +21,6 @@ get_middle_lung_slice = GetMiddleLungSlice()
 resample = ResampleVolume(new_spacing=(1, 1, 8))
 for key, path in config.data.items():
     for f in os.listdir(path):
-        logging.info("Preprocessing of file {} started".format(f))
         try:
             sitk_img = sitk.ReadImage(os.path.join(path, f))
             nib_img = nib.load(os.path.join(path, f))
@@ -34,5 +33,7 @@ for key, path in config.data.items():
             img, img_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)
             with open(os.path.join(config.preprocessed_data[key], f.split(".")[0] + ".pkl"), "wb") as handle:
                 pickle.dump({"data": img, "mask": img_s, "resize_factor": resize_factor}, handle)
+                logging.info("Preprocessing of file {} finished".format(f))
+
         except Exception as err:
             logging.error("Error occured while preprocessing file {}, error: {}".format(f, err))

@@ -64,8 +64,10 @@ identity_losses = []
 gan_losses = []
 cycle_losses = []
 
+total_batch_counter = 0
 for epoch in range(0, args.epochs):
     for i, data in enumerate(dataloader):
+        print(total_batch_counter)
         real_A, real_B = data
         real_A, real_B = real_A.float().to(device), real_B.float().to(device)
 
@@ -156,22 +158,23 @@ for epoch in range(0, args.epochs):
         optimizer_D_B.step()
 
         # Logging
-        writer.add_scalar("Loss/Generator Error", errG, i)
-        writer.add_scalar("Loss/DiscriminatorA Error", errD_A, i)
-        writer.add_scalar("Loss/DiscriminatorB Error", errD_B, i)
+        writer.add_scalar("Loss/Generator Error", errG, total_batch_counter)
+        writer.add_scalar("Loss/DiscriminatorA Error", errD_A, total_batch_counter)
+        writer.add_scalar("Loss/DiscriminatorB Error", errD_B, total_batch_counter)
 
         f = plt.figure()
         f.add_subplot(1, 2, 1)
         plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
         f.add_subplot(1, 2, 2)
         plt.imshow(denormalize(fake_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-        writer.add_figure("Image outputs/A to B", f, i)
+        writer.add_figure("Image outputs/A to B", f, total_batch_counter)
         f = plt.figure()
         f.add_subplot(1, 2, 1)
         plt.imshow(denormalize(real_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
         f.add_subplot(1, 2, 2)
         plt.imshow(denormalize(fake_image_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-        writer.add_figure("Image outputs/B to A", f, i)
+        writer.add_figure("Image outputs/B to A", f, total_batch_counter)
+        total_batch_counter += 1
 
 writer.flush()
 writer.close()
