@@ -7,18 +7,17 @@ class PadVolume:
     """
     Pads volume with zeros.
     """
-
     def __init__(self, dimensions):
         """
-        :param dimensions: Output dimensions(H_out, W_out, D_out) of padded volume.
+        :param dimensions: Output shape(H_out, W_out, D_out) of padded volume.
         """
         assert len(dimensions) == 3
         self.dimensions = dimensions
 
     def __call__(self, volume):
         """
-        :param volume: Volume with size (H_in, W_in, D_in) to be padded.
-        :return: Returns padded volume with zeros with size H_out, W_out, D_out).
+        :param volume: Volume with shape (H_in, W_in, D_in) to be padded.
+        :return: Returns padded volume with zeros with shape H_out, W_out, D_out).
         """
         pad1, pad2, pad3 = self.dimensions[0] - volume.shape[0], \
                            self.dimensions[1] - volume.shape[1], \
@@ -35,19 +34,43 @@ class PadVolume:
         return padded
 
 
-class GetMiddleLungSlice:
+class GetMiddleSlices:
     """
-    Returns middle slice of segmented lung volume.
+    Get n middle slices from volume.
     """
+    def __init__(self, n):
+        """
+        :param n: Number of slices to be selected.
+        """
+        self.n = n
 
     def __call__(self, volume):
         """
-        :param volume: Volume of input size (H_in, W_in, D_in).
-        :return: Returns middle slice(H_out, W_out) of segmented lung volume of size (H_in, W_in, D_in).
+        :param volume: Volume of shape (H_in, W_in, D_in).
+        :return: List of slcies of shape (H_out, W_out)
         """
-        # Remove all elements from rows and columns that contain zeroes only.
-        lung_slices = volume[:, :, ~(volume == 0).all(axis=(0, 1))]
-        return lung_slices[:, :, lung_slices.shape[2] // 2]
+        assert self.n <= volume.shape[2]
+        middle_slice_idx = volume.shape[2] // 2
+        bottom_slice_idx = middle_slice_idx - (self.n // 2)
+        slices = [None] * self.n
+        for i, slice_idx in enumerate(range(bottom_slice_idx, bottom_slice_idx + self.n)):
+            slices[i] = volume[:, :, slice_idx]
+
+        assert len(slices) == self.n
+        return slices
+
+
+class RemoveEmptySlices:
+    """
+    Remove empty padding slices.
+    Empty slice means that columns and rows of the slice contain zero elements only.
+    """
+    def __call__(self, volume):
+        """
+        :param volume: Volume of input shape (H_in, W_in, D_in).
+        :return: Returns only nonzero slices.
+        """
+        return volume[:, :, ~(volume == 0).all(axis=(0, 1))]
 
 
 class ResampleVolume:
@@ -55,19 +78,19 @@ class ResampleVolume:
     Resample volume to different voxel_spacing.
     Voxel spacing (1, 1, 1) means that one pixel represents volume of 1x1x1mm in real world.
     """
-
     def __init__(self, new_spacing):
         """
-        :param new_spacing: new_spacing has to be a tuple of length 3.
+        :param new_spacing: Tuple of integers of new voxel_spacing.
         """
         self.new_spacing = new_spacing
 
     def __call__(self, volume, current_spacing):
         """
         :param volume: Volume to be resampled of size (H_in, W_in, D_in).
-        :param current_spacing: Current voxel spacing values. current spacing has to be a tuple of length 3.
+        :param current_spacing: Current voxel spacing values. Current spacing has to be a tuple of length equal to
+        length of self.new_spacing.
         :return: Returns volume with new size of (H_out, W_out, D_out)
-                 and tuple of length 3 with corresponding resize factors. 
+                 and tuple with corresponding resize factors.
         """
         resize_factor = current_spacing / self.new_spacing
         new_shape = np.round(volume.shape * resize_factor)
@@ -80,7 +103,6 @@ class ApplyMask:
     """
     Applies mask to volume.
     """
-
     def __call__(self, volume, mask):
         """
         :param volume: Volume of size (H_in, W_in, D_in) to be masked.
@@ -95,7 +117,6 @@ class ToTensor:
     """
     Transforms numpy array to tensor.
     """
-
     def __call__(self, ndarray):
         """
         :param ndarray: If ndarray is of size (H_in, W_in), then ndarray is transformed into (C_out=1, H_out, W_out).
@@ -115,8 +136,7 @@ class ToTensor:
 
 class Normalize:
     """
-    Normalize ndarray between values -1, 1
+    Normalize ndarray between values -1, 1.
     """
-
     def __call__(self, ndarray):
         return (ndarray - np.mean(ndarray)) / (np.max(ndarray) - np.min(ndarray))
