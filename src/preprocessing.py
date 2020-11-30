@@ -39,7 +39,6 @@ for key, path in config.data.items():
                         os.path.join(config.preprocessed_data[key], f.split(".")[0] + "slice " + str(i) + ".pkl"), "wb"
                 ) as handle:
                     pickle.dump({"data": _slice, "mask": _slice_s, "resize_factor": resize_factor}, handle)
-                    logging.info("Preprocessing of file {} finished".format(f))
+            logging.info("Preprocessing of file {} finished".format(f))
         except Exception as err:
             logging.error("Error occured while preprocessing file {}, error: {}".format(f, err))
-        exit()
