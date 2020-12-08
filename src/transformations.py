@@ -1,6 +1,25 @@
 import numpy as np
-import scipy
+import random
 from torch import from_numpy
+from scipy import ndimage
+
+class RandomRotation:
+    """
+    Randomly rotates image.
+    """
+    def __init__(self, max_rotation):
+        """
+        :param max_rotation: Max angle of random rotation in degrees.
+        """
+        self.max_rotation = max_rotation
+
+    def __call__(self, image):
+        """
+        :param image: Image with shape (H_in, W_in).
+        :return: Returns rotated image with shape (W_in, W_in).
+        """
+        rand_angle = random.randint(-self.max_rotation, self.max_rotation)
+        return ndimage.rotate(image, angle=rand_angle, reshape=False)
 
 
 class PadVolume:
@@ -47,7 +66,7 @@ class GetMiddleSlices:
     def __call__(self, volume):
         """
         :param volume: Volume of shape (H_in, W_in, D_in).
-        :return: List of slcies of shape (H_out, W_out)
+        :return: Returns list of slices of shape (H_in, W_in).
         """
         assert self.n <= volume.shape[2]
         middle_slice_idx = volume.shape[2] // 2
@@ -68,7 +87,7 @@ class RemoveEmptySlices:
     def __call__(self, volume):
         """
         :param volume: Volume of input shape (H_in, W_in, D_in).
-        :return: Returns only nonzero slices.
+        :return: Returns volume with shape (H_in, W_in, D_out).
         """
         return volume[:, :, ~(volume == 0).all(axis=(0, 1))]
 
@@ -95,7 +114,7 @@ class ResampleVolume:
         resize_factor = current_spacing / self.new_spacing
         new_shape = np.round(volume.shape * resize_factor)
         real_resize_factor = new_shape / volume.shape
-        resampled_volume = scipy.ndimage.interpolation.zoom(volume, real_resize_factor, mode='nearest')
+        resampled_volume = ndimage.interpolation.zoom(volume, real_resize_factor, mode='nearest')
         return resampled_volume, real_resize_factor
 
 

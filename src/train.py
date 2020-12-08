@@ -17,7 +17,7 @@ start_time = datetime.today().strftime('%d-%m-%Y-%H:%M:%S')
 writer = SummaryWriter(log_dir=config.training_logs + start_time)
 parser = argparse.ArgumentParser("Training script.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-e", "--epochs", default=20, type=int, help="Set number of epochs.")
-parser.add_argument("-b", "--batch-size", default=2, type=int, help="Set batch size.")
+parser.add_argument("-b", "--batch-size", default=1, type=int, help="Set batch size.")
 parser.add_argument("--gpu", default=True, nargs="?", help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generators", default=0.0002, type=float, help="Set learning rate of "
                                                                                    "Generators.")
@@ -25,12 +25,12 @@ parser.add_argument("--learning-rate-discriminator-a", default=0.00002, type=flo
                                                                                         "of Discriminator A.")
 parser.add_argument("--learning-rate-discriminator-b", default=0.00002, type=float, help="Set learning rate "
                                                                                         "of Discriminator B.")
-parser.add_argument("--filters-generators", default=2, type=int, help="Set multiplier of convolutional filters "
+parser.add_argument("--filters-generators", default=6, type=int, help="Set multiplier of convolutional filters "
                                                                       "in generators.")
-parser.add_argument("--depth-generators", default=1, type=int, help="Set depth of Unet generator architecture")
-parser.add_argument("--filters-discriminators", default=2, type=int, help="Set multiplier of convolutional "
+parser.add_argument("--depth-generators", default=5, type=int, help="Set depth of Unet generator architecture")
+parser.add_argument("--filters-discriminators", default=1, type=int, help="Set multiplier of convolutional "
                                                                           "filters in discriminators.")
-parser.add_argument("--convolutional-layers-discriminators", default=2, type=int, help="Set number of "
+parser.add_argument("--depth-discriminators", default=2, type=int, help="Set number of "
                                                                                        "convolutional layers "
                                                                                        "in discriminator.")
 
@@ -46,9 +46,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "c
 netG_A2B = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
 netG_B2A = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
 netD_A = BaseDiscriminator(
-    args.filters_discriminators, args.convolutional_layers_discriminators).to(device).apply(weights_init)
+    args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 netD_B = BaseDiscriminator(
-    args.filters_discriminators, args.convolutional_layers_discriminators).to(device).apply(weights_init)
+    args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
