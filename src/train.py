@@ -27,6 +27,7 @@ parser.add_argument("--learning-rate-discriminator-b", default=0.00002, type=flo
                                                                                         "of Discriminator B.")
 parser.add_argument("--filters-generators", default=2, type=int, help="Set multiplier of convolutional filters "
                                                                       "in generators.")
+parser.add_argument("--depth-generators", default=1, type=int, help="Set depth of Unet generator architecture")
 parser.add_argument("--filters-discriminators", default=2, type=int, help="Set multiplier of convolutional "
                                                                           "filters in discriminators.")
 parser.add_argument("--convolutional-layers-discriminators", default=2, type=int, help="Set number of "
@@ -42,8 +43,8 @@ dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.ba
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
-netG_A2B = UnetGenerator2D(args.filters_generators).to(device).apply(weights_init)
-netG_B2A = UnetGenerator2D(args.filters_generators).to(device).apply(weights_init)
+netG_A2B = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
+netG_B2A = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
 netD_A = BaseDiscriminator(
     args.filters_discriminators, args.convolutional_layers_discriminators).to(device).apply(weights_init)
 netD_B = BaseDiscriminator(
