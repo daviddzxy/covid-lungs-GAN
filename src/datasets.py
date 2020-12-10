@@ -1,7 +1,7 @@
 import os
 import config
 import pickle
-from src.transformations import Normalize, ToTensor, RandomRotation
+from transformations import Normalize, ToTensor, RandomRotation
 from torch.utils.data import Dataset
 
 
