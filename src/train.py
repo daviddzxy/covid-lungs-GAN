@@ -183,7 +183,6 @@ for epoch in range(0, args.epochs):
     plt.imshow(denormalize(recovered_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.tight_layout()
     writer.add_figure("Image outputs/B to A to B", f, epoch)
-    total_batch_counter += 1
 
 writer.flush()
 writer.close()
