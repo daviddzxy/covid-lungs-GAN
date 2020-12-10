@@ -20,8 +20,6 @@ google-auth-oauthlib==0.4.2
 grpcio==1.33.2
 idna==2.10
 imageio==2.9.0
-ipykernel==5.3.4
-ipython-genutils==0.2.0
 jedi==0.17.2
 Jinja2==2.11.2
 json5==0.9.5
@@ -52,7 +50,6 @@ pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==8.0.0
 prometheus-client==0.8.0
-prompt-toolkit==3.0.8
 protobuf==3.14.0
 ptyprocess==0.6.0
 pyasn1==0.4.8
