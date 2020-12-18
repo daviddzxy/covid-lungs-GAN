@@ -12,28 +12,35 @@ from matplotlib import pyplot as plt
 import config
 import argparse
 
-
-start_time = datetime.today().strftime('%d-%m-%Y-%H:%M:%S')
+start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
 writer = SummaryWriter(log_dir=config.training_logs + start_time)
-parser = argparse.ArgumentParser("Training script.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("-e", "--epochs", default=30, type=int, help="Set number of epochs.")
-parser.add_argument("-b", "--batch-size", default=1, type=int, help="Set batch size.")
-parser.add_argument("--gpu", default=True, nargs="?", help="Use graphics card during training.")
-parser.add_argument("--learning-rate-generators", default=0.00005, type=float, help="Set learning rate of "
-                                                                                   "Generators.")
-parser.add_argument("--learning-rate-discriminator-a", default=0.00002, type=float, help="Set learning rate "
-                                                                                        "of Discriminator A.")
-parser.add_argument("--learning-rate-discriminator-b", default=0.00002, type=float, help="Set learning rate "
-                                                                                        "of Discriminator B.")
-parser.add_argument("--filters-generators", default=6, type=int, help="Set multiplier of convolutional filters "
-                                                                      "in generators.")
-parser.add_argument("--depth-generators", default=5, type=int, help="Set depth of Unet generator architecture")
-parser.add_argument("--filters-discriminators", default=1, type=int, help="Set multiplier of convolutional "
-                                                                          "filters in discriminators.")
-parser.add_argument("--depth-discriminators", default=2, type=int, help="Set number of "
-                                                                                       "convolutional layers "
-                                                                                       "in discriminator.")
-
+parser = argparse.ArgumentParser("Training script.")
+parser.add_argument("-e", "--epochs", default=config.epochs, type=int,
+                    help="Set number of epochs.")
+parser.add_argument("-b", "--batch-size", default=config.batch_size, type=int,
+                    help="Set batch size.")
+parser.add_argument("--gpu", default=config.gpu, nargs="?",
+                    help="Use graphics card during training.")
+parser.add_argument("--learning-rate-generators", default=config.learning_rate_generators, type=float,
+                    help="Set learning rate of Generators.")
+parser.add_argument("--learning-rate-discriminator-a", default=config.learning_rate_discriminator_a, type=float,
+                    help="Set learning rate of Discriminator A.")
+parser.add_argument("--learning-rate-discriminator-b", default=config.learning_rate_discriminator_b, type=float,
+                    help="Set learning rate of Discriminator B.")
+parser.add_argument("--filters-generators", default=config.filters_generators, type=int,
+                    help="Set multiplier of convolutional filters in generators.")
+parser.add_argument("--depth-generators", default=config.depth_generators, type=int,
+                    help="Set depth of Unet generator architecture")
+parser.add_argument("--filters-discriminators", default=config.filters_discriminators, type=int,
+                    help="Set multiplier of convolutional filters in discriminators.")
+parser.add_argument("--depth-discriminators", default=config.depth_discriminators, type=int,
+                    help="Set number of convolutional layers in discriminator.")
+parser.add_argument("--save-model", default=config.save_model, nargs="?",
+                    help="Turn on model saving.")
+parser.add_argument("--save-model-epoch", default=config.save_model_epoch,
+                    help="Save model every n-th epoch.")
+parser.add_argument("--load-model", default="", nargs="?",
+                    help="Load saved model from model_path directory. Enter filename as argument.")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
@@ -50,25 +57,43 @@ netD_A = BaseDiscriminator(
 netD_B = BaseDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 
+epoch_start = 0
+if args.load_model:
+    checkpoint = torch.load(os.path.join(config.model_path, args.load_model))
+    netG_A2B.load_state_dict(checkpoint["gen_a2b"])
+    netG_B2A.load_state_dict(checkpoint["gen_b2a"])
+    netD_A.load_state_dict(checkpoint["disc_a"])
+    netD_B.load_state_dict(checkpoint["disc_b"])
+
+    optimizer_G = torch.optim.Adam(
+        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=checkpoint["lr_g"],
+        betas=(0.5, 0.999))
+    optimizer_D_A = torch.optim.Adam(
+        netD_A.parameters(), lr=checkpoint["lr_d_a"], betas=(0.5, 0.999))
+    optimizer_D_B = torch.optim.Adam(
+        netD_B.parameters(), lr=checkpoint["lr_d_b"], betas=(0.5, 0.999))
+
+    optimizer_G.load_state_dict(checkpoint["optim_g"])
+    optimizer_D_A.load_state_dict(checkpoint["optim_d_a"])
+    optimizer_D_B.load_state_dict(checkpoint["optim_d_b"])
+    epoch_start = checkpoint["epoch"]
+
+else:
+    optimizer_G = torch.optim.Adam(
+        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators,
+        betas=(0.5, 0.999))
+    optimizer_D_A = torch.optim.Adam(
+        netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
+    optimizer_D_B = torch.optim.Adam(
+        netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
+
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
 
-optimizer_G = torch.optim.Adam(
-    itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators, betas=(0.5, 0.999))
-optimizer_D_A = torch.optim.Adam(
-    netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
-optimizer_D_B = torch.optim.Adam(
-    netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
-
-identity_losses = []
-gan_losses = []
-cycle_losses = []
-
 total_batch_counter = 0
-for epoch in range(0, args.epochs):
+for epoch in range(epoch_start, args.epochs):
     for i, data in enumerate(dataloader):
-        print(total_batch_counter)
         real_A, real_B = data
         real_A, real_B = real_A.float().to(device), real_B.float().to(device)
 
@@ -183,6 +208,22 @@ for epoch in range(0, args.epochs):
     plt.imshow(denormalize(recovered_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.tight_layout()
     writer.add_figure("Image outputs/B to A to B", f, epoch)
+
+    if args.save_model and epoch % args.save_model_epoch == 0:
+        torch.save({
+            "epoch": epoch,
+            "gen_a2b": netG_A2B.state_dict(),
+            "gen_b2a": netG_B2A.state_dict(),
+            "disc_a": netD_A.state_dict(),
+            "disc_b": netD_B.state_dict(),
+            "optim_g": optimizer_G.state_dict(),
+            "optim_d_a": optimizer_D_A.state_dict(),
+            "optim_d_b": optimizer_D_B.state_dict(),
+            "lr_g": args.learning_rate_generators,
+            "lr_d_a": args.learning_rate_discriminator_a,
+            "lr_d_b": args.learning_rate_discriminator_b
+            }, os.path.join(config.model_path, "{}-epoch-{}.pt".format(start_time, epoch))
+        )
 
 writer.flush()
 writer.close()

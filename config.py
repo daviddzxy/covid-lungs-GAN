@@ -25,4 +25,20 @@ training_data = {
         "B": "/media/david/DATA/Covid-Data/Training_data/B"
 }
 
+model_path = "/media/david/DATA/Covid-lungs-models"
+
 padding_shape = [512, 512, 64]
+
+#  training parameters
+epochs = 100
+batch_size = 1
+learning_rate_generators = 0.0001
+learning_rate_discriminator_a = 0.0002
+learning_rate_discriminator_b = 0.0002
+filters_generators = 6
+depth_generators = 5
+filters_discriminators = 1
+depth_discriminators = 2
+gpu = True
+save_model = True
+save_model_epoch = 3
