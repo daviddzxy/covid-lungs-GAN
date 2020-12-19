@@ -3,6 +3,27 @@ import random
 from torch import from_numpy
 from scipy import ndimage
 
+
+class Crop:
+    """
+    Crop image.
+    """
+    def __init__(self, dimensions):
+        """
+        :param dimensions: Output shape(H_out, W_out) of cropped image.
+        """
+        self.dim_x = dimensions[0] // 2
+        self.dim_y = dimensions[1] // 2
+
+    def __call__(self, image):
+        """
+        :param image: Image of shape (H_in, W_in) to be cropped.
+        return: Cropped image of shape (H_out, W_out).
+        """
+        y_mid = image.shape[0] // 2
+        x_mid = image.shape[1] // 2
+        return image[y_mid - self.dim_y:y_mid + self.dim_y, x_mid - self.dim_x:x_mid + self.dim_x]
+
 class RandomRotation:
     """
     Randomly rotates image.
@@ -35,7 +56,7 @@ class PadVolume:
 
     def __call__(self, volume):
         """
-        :param volume: Volume with shape (H_in, W_in, D_in) to be padded.
+        :param volume: Volume of shape (H_in, W_in, D_in) to be padded.
         :return: Returns padded volume with zeros with shape H_out, W_out, D_out).
         """
         pad1, pad2, pad3 = self.dimensions[0] - volume.shape[0], \
@@ -87,7 +108,7 @@ class RemoveEmptySlices:
     def __call__(self, volume):
         """
         :param volume: Volume of input shape (H_in, W_in, D_in).
-        :return: Returns volume with shape (H_in, W_in, D_out).
+        :return: Returns volume of shape (H_in, W_in, D_out).
         """
         return volume[:, :, ~(volume == 0).all(axis=(0, 1))]
 
@@ -105,10 +126,10 @@ class ResampleVolume:
 
     def __call__(self, volume, current_spacing):
         """
-        :param volume: Volume to be resampled of size (H_in, W_in, D_in).
+        :param volume: Volume to be resampled of shape (H_in, W_in, D_in).
         :param current_spacing: Current voxel spacing values. Current spacing has to be a tuple of length equal to
         length of self.new_spacing.
-        :return: Returns volume with new size of (H_out, W_out, D_out)
+        :return: Returns volume of shape (H_out, W_out, D_out)
                  and tuple with corresponding resize factors.
         """
         resize_factor = current_spacing / self.new_spacing
@@ -125,7 +146,7 @@ class ApplyMask:
     def __call__(self, volume, mask):
         """
         :param volume: Volume of size (H_in, W_in, D_in) to be masked.
-        :param mask: Mask of size (H_in, W_in, D_in), which contains nonzero elements,
+        :param mask: Mask of shape (H_in, W_in, D_in), which contains nonzero elements,
                      which will be used to keep relevant infromation in volume.
         :return: Returns masked volume.
         """
@@ -138,8 +159,8 @@ class ToTensor:
     """
     def __call__(self, ndarray):
         """
-        :param ndarray: If ndarray is of size (H_in, W_in), then ndarray is transformed into (C_out=1, H_out, W_out).
-                        If ndarray is of size (H_in, W_in, D_in), then ndarray is transformed
+        :param ndarray: If ndarray is of shape (H_in, W_in), then ndarray is transformed into (C_out=1, H_out, W_out).
+                        If ndarray is of shape (H_in, W_in, D_in), then ndarray is transformed
                         into (C_out=1, D_out, H_out, W_out).
         :return: Returns corresponding tensor, which is compatible with conv2d or conv3d torch modules.
         """

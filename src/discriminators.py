@@ -2,7 +2,7 @@ from torch import nn
 from network_parts import Conv
 
 
-class BaseDiscriminator(nn.Module):
+class PatchGanDiscriminator(nn.Module):
     def __init__(self, filters, layer_count):
         super().__init__()
         if layer_count < 2:

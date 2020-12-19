@@ -3,12 +3,14 @@ import torch
 import itertools
 from datetime import datetime
 from torch.utils.data import DataLoader
+from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D
-from discriminators import BaseDiscriminator
+from discriminators import PatchGanDiscriminator
 from utils import weights_init, denormalize
 from matplotlib import pyplot as plt
+from transformations import Normalize, ToTensor, RandomRotation, Crop
 import config
 import argparse
 
@@ -45,16 +47,16 @@ args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
 
-dataset = CycleGanDataset()
+dataset = CycleGanDataset(transforms=transforms.Compose([RandomRotation(3), Crop([256, 256]), Normalize(), ToTensor()]))
 dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
 netG_A2B = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
 netG_B2A = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
-netD_A = BaseDiscriminator(
+netD_A = PatchGanDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
-netD_B = BaseDiscriminator(
+netD_B = PatchGanDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 
 epoch_start = 0
