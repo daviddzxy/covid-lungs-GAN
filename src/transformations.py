@@ -24,6 +24,7 @@ class Crop:
         x_mid = image.shape[1] // 2
         return image[y_mid - self.dim_y:y_mid + self.dim_y, x_mid - self.dim_x:x_mid + self.dim_x]
 
+
 class RandomRotation:
     """
     Randomly rotates image.

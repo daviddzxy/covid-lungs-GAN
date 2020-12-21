@@ -68,12 +68,11 @@ if args.load_model:
     netD_B.load_state_dict(checkpoint["disc_b"])
 
     optimizer_G = torch.optim.Adam(
-        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=checkpoint["lr_g"],
-        betas=(0.5, 0.999))
+        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators)
     optimizer_D_A = torch.optim.Adam(
-        netD_A.parameters(), lr=checkpoint["lr_d_a"], betas=(0.5, 0.999))
+        netD_A.parameters(), lr=args.learning_rate_discriminator_a)
     optimizer_D_B = torch.optim.Adam(
-        netD_B.parameters(), lr=checkpoint["lr_d_b"], betas=(0.5, 0.999))
+        netD_B.parameters(), lr=args.learning_rate_discriminator_b)
 
     optimizer_G.load_state_dict(checkpoint["optim_g"])
     optimizer_D_A.load_state_dict(checkpoint["optim_d_a"])
@@ -92,7 +91,6 @@ else:
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
-
 total_batch_counter = 0
 for epoch in range(epoch_start, args.epochs):
     for i, data in enumerate(dataloader):
@@ -220,10 +218,7 @@ for epoch in range(epoch_start, args.epochs):
             "disc_b": netD_B.state_dict(),
             "optim_g": optimizer_G.state_dict(),
             "optim_d_a": optimizer_D_A.state_dict(),
-            "optim_d_b": optimizer_D_B.state_dict(),
-            "lr_g": args.learning_rate_generators,
-            "lr_d_a": args.learning_rate_discriminator_a,
-            "lr_d_b": args.learning_rate_discriminator_b
+            "optim_d_b": optimizer_D_B.state_dict()
             }, os.path.join(config.model_path, "{}-epoch-{}.pt".format(start_time, epoch))
         )
 
