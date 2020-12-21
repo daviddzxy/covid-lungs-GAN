@@ -43,6 +43,9 @@ parser.add_argument("--save-model-epoch", default=config.save_model_epoch,
                     help="Save model every n-th epoch.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
+parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
+                    help="Set learning rate decay of generators. First argument is value of decay factor,"
+                         " second value is period of learning rate decay")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
@@ -77,6 +80,11 @@ if args.load_model:
     optimizer_G.load_state_dict(checkpoint["optim_g"])
     optimizer_D_A.load_state_dict(checkpoint["optim_d_a"])
     optimizer_D_B.load_state_dict(checkpoint["optim_d_b"])
+
+    scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
+                                                  gamma=args.learning_rate_decay[0],
+                                                  step_size=args.learning_rate_decay[1])
+    scheduler_G.load_state_dict(checkpoint["scheduler_g"])
     epoch_start = checkpoint["epoch"]
 
 else:
@@ -87,6 +95,10 @@ else:
         netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
     optimizer_D_B = torch.optim.Adam(
         netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
+
+    scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
+                                                  gamma=args.learning_rate_decay[0],
+                                                  step_size=args.learning_rate_decay[1])
 
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
@@ -189,6 +201,8 @@ for epoch in range(epoch_start, args.epochs):
         writer.add_scalar("Loss/DiscriminatorB Error", errD_B, total_batch_counter)
         total_batch_counter += 1
 
+    scheduler_G.step()
+    print("Epoch {}, lr {}".format(epoch, optimizer_G.param_groups[0]["lr"]))
     f = plt.figure()
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
@@ -218,7 +232,8 @@ for epoch in range(epoch_start, args.epochs):
             "disc_b": netD_B.state_dict(),
             "optim_g": optimizer_G.state_dict(),
             "optim_d_a": optimizer_D_A.state_dict(),
-            "optim_d_b": optimizer_D_B.state_dict()
+            "optim_d_b": optimizer_D_B.state_dict(),
+            "scheduler_g": scheduler_G.state_dict()
             }, os.path.join(config.model_path, "{}-epoch-{}.pt".format(start_time, epoch))
         )
 
