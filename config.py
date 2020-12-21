@@ -41,4 +41,5 @@ filters_discriminators = 1
 depth_discriminators = 2
 gpu = True
 save_model = True
-save_model_epoch = 3
+save_model_epoch = 10
+learning_rate_decay = [0.9, 10]
