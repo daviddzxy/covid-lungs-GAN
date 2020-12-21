@@ -62,6 +62,18 @@ netD_A = PatchGanDiscriminator(
 netD_B = PatchGanDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 
+optimizer_G = torch.optim.Adam(
+    itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators,
+    betas=(0.5, 0.999))
+optimizer_D_A = torch.optim.Adam(
+    netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
+optimizer_D_B = torch.optim.Adam(
+    netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
+
+scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
+                                              gamma=args.learning_rate_decay[0],
+                                              step_size=args.learning_rate_decay[1])
+
 epoch_start = 0
 if args.load_model:
     checkpoint = torch.load(os.path.join(config.model_path, args.load_model))
@@ -69,36 +81,11 @@ if args.load_model:
     netG_B2A.load_state_dict(checkpoint["gen_b2a"])
     netD_A.load_state_dict(checkpoint["disc_a"])
     netD_B.load_state_dict(checkpoint["disc_b"])
-
-    optimizer_G = torch.optim.Adam(
-        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators)
-    optimizer_D_A = torch.optim.Adam(
-        netD_A.parameters(), lr=args.learning_rate_discriminator_a)
-    optimizer_D_B = torch.optim.Adam(
-        netD_B.parameters(), lr=args.learning_rate_discriminator_b)
-
     optimizer_G.load_state_dict(checkpoint["optim_g"])
     optimizer_D_A.load_state_dict(checkpoint["optim_d_a"])
     optimizer_D_B.load_state_dict(checkpoint["optim_d_b"])
-
-    scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
-                                                  gamma=args.learning_rate_decay[0],
-                                                  step_size=args.learning_rate_decay[1])
     scheduler_G.load_state_dict(checkpoint["scheduler_g"])
     epoch_start = checkpoint["epoch"]
-
-else:
-    optimizer_G = torch.optim.Adam(
-        itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators,
-        betas=(0.5, 0.999))
-    optimizer_D_A = torch.optim.Adam(
-        netD_A.parameters(), lr=args.learning_rate_discriminator_a, betas=(0.5, 0.999))
-    optimizer_D_B = torch.optim.Adam(
-        netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
-
-    scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
-                                                  gamma=args.learning_rate_decay[0],
-                                                  step_size=args.learning_rate_decay[1])
 
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
