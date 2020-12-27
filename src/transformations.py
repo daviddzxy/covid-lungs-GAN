@@ -180,4 +180,4 @@ class Normalize:
     Normalize ndarray between values -1, 1.
     """
     def __call__(self, ndarray):
-        return (2 * ((ndarray - min(ndarray)) / (max(ndarray) - min(ndarray)))) - 1
+        return (2 * ((ndarray - np.min(ndarray)) / (np.max(ndarray) - np.min(ndarray)))) - 1
