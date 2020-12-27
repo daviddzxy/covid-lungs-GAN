@@ -46,11 +46,16 @@ parser.add_argument("--load-model", default="", nargs="?",
 parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
                     help="Set learning rate decay of generators. First argument is value of decay factor,"
                          " second value is period of learning rate decay")
+parser.add_argument("--random-rotation", type=int, default=config.random_rotation,
+                    help="Set max degrees of random rotation.")
+parser.add_argument("--crop", type=int, default=config.crop, help="Set lenght of image crop.")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
 
-dataset = CycleGanDataset(transforms=transforms.Compose([RandomRotation(3), Crop([256, 256]), Normalize(), ToTensor()]))
+dataset = CycleGanDataset(transforms=transforms.Compose([RandomRotation(args.random_rotation),
+                                                         Crop([args.crop, args.crop]),
+                                                         Normalize(), ToTensor()]))
 dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
@@ -189,7 +194,6 @@ for epoch in range(epoch_start, args.epochs):
         total_batch_counter += 1
 
     scheduler_G.step()
-    print("Epoch {}, lr {}".format(epoch, optimizer_G.param_groups[0]["lr"]))
     f = plt.figure()
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
