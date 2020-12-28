@@ -25,6 +25,7 @@ training_data = {
         "B": "/media/david/DATA/Covid-Data/Training_data/B"
 }
 
+dataset_metadata = "/media/david/DATA/Covid-Data/Training_data/dataset_metadata.pkl"
 model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]

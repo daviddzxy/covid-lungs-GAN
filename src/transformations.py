@@ -179,5 +179,9 @@ class Normalize:
     """
     Normalize ndarray between values -1, 1.
     """
+    def __init__(self, dataset_min, dataset_max):
+        self.min = dataset_min
+        self.max = dataset_max
+
     def __call__(self, ndarray):
-        return (2 * ((ndarray - np.min(ndarray)) / (np.max(ndarray) - np.min(ndarray)))) - 1
+        return 2 * ((ndarray - self.min) / (self.max - self.min)) - 1

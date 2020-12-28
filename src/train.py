@@ -215,7 +215,7 @@ for epoch in range(epoch_start, args.epochs):
     f.tight_layout()
     writer.add_figure("Image outputs/B to A to B", f, epoch)
 
-    if args.save_model and epoch % args.save_model_epoch == 0:
+    if args.save_model[0] and epoch % args.save_model[1] == 0:
         torch.save({
             "epoch": epoch,
             "gen_a2b": netG_A2B.state_dict(),

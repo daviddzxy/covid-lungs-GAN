@@ -10,9 +10,18 @@ class CycleGanDataset(Dataset):
     def __init__(self, _transforms=None):
         self.paths_A = os.listdir(config.training_data["A"])
         self.paths_B = os.listdir(config.training_data["B"])
+        with open(config.dataset_metadata, "rb") as handle:
+            self._dataset_metadata = pickle.load(handle)
+
         self.transforms = []
-        self.transforms.extend([Normalize(), ToTensor()])
-        self.transforms = transforms.Compose(transforms)
+        if _transforms:
+            self.transforms = _transforms
+        self.transforms.extend([
+            Normalize(self._dataset_metadata["min"], self._dataset_metadata["max"]),
+            ToTensor()
+        ])
+
+        self.transforms = transforms.Compose(self.transforms)
 
     def __getitem__(self, index):
         file_handler_A = open(os.path.join(config.training_data["A"], self.paths_A[index % len(self.paths_A)]), "rb")
