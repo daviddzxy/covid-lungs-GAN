@@ -3,14 +3,13 @@ import torch
 import itertools
 from datetime import datetime
 from torch.utils.data import DataLoader
-from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, denormalize
 from matplotlib import pyplot as plt
-from transformations import Normalize, ToTensor, RandomRotation, Crop
+from transformations import RandomRotation, Crop
 import config
 import argparse
 
@@ -37,10 +36,8 @@ parser.add_argument("--filters-discriminators", default=config.filters_discrimin
                     help="Set multiplier of convolutional filters in discriminators.")
 parser.add_argument("--depth-discriminators", default=config.depth_discriminators, type=int,
                     help="Set number of convolutional layers in discriminator.")
-parser.add_argument("--save-model", default=config.save_model, nargs="?",
-                    help="Turn on model saving.")
-parser.add_argument("--save-model-epoch", default=config.save_model_epoch,
-                    help="Save model every n-th epoch.")
+parser.add_argument("--save-model", default=config.save_model, nargs=2,
+                    help="Turn on model saving. Second value is frequency of model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
 parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
@@ -53,9 +50,13 @@ args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
 
-dataset = CycleGanDataset(transforms=transforms.Compose([RandomRotation(args.random_rotation),
-                                                         Crop([args.crop, args.crop]),
-                                                         Normalize(), ToTensor()]))
+_transforms = []
+if args.random_rotation != 0:
+    _transforms.append(RandomRotation(args.random_rotation))
+if args.crop != 0:
+    _transforms.append(Crop([args.crop, args.crop]))
+
+dataset = CycleGanDataset(_transforms=_transforms)
 dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
@@ -97,10 +98,10 @@ identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
 total_batch_counter = 0
 for epoch in range(epoch_start, args.epochs):
+    print("Current epoch {}.".format(epoch))
     for i, data in enumerate(dataloader):
         real_A, real_B = data
         real_A, real_B = real_A.float().to(device), real_B.float().to(device)
-
         optimizer_G.zero_grad()
 
         # Identity loss

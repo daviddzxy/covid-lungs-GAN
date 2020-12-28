@@ -2,13 +2,17 @@ import os
 import config
 import pickle
 from torch.utils.data import Dataset
+from transformations import Normalize, ToTensor
+from torchvision import transforms
 
 
 class CycleGanDataset(Dataset):
-    def __init__(self, transforms=None):
+    def __init__(self, _transforms=None):
         self.paths_A = os.listdir(config.training_data["A"])
         self.paths_B = os.listdir(config.training_data["B"])
-        self.transforms = transforms
+        self.transforms = []
+        self.transforms.extend([Normalize(), ToTensor()])
+        self.transforms = transforms.Compose(transforms)
 
     def __getitem__(self, index):
         file_handler_A = open(os.path.join(config.training_data["A"], self.paths_A[index % len(self.paths_A)]), "rb")
