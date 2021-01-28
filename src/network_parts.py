@@ -25,9 +25,9 @@ class Conv(nn.Module):
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding, outermost=False):
         super(DoubleConv, self).__init__()
-        self.conv1 = Conv(in_channels, in_channels, kernel_size, stride, padding)
-        self.conv2 = Conv(in_channels, out_channels, kernel_size, stride, padding) if outermost is False else Conv(
-            in_channels,
+        self.conv1 = Conv(in_channels, out_channels, kernel_size, stride, padding)
+        self.conv2 = Conv(out_channels, out_channels, kernel_size, stride, padding) if outermost is False else Conv(
+            out_channels,
             out_channels,
             kernel_size,
             stride,
