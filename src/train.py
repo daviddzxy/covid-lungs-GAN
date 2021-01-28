@@ -45,7 +45,7 @@ parser.add_argument("--learning-rate-decay", type=float, default=config.learning
                          " second value is period of learning rate decay")
 parser.add_argument("--random-rotation", type=int, default=config.random_rotation,
                     help="Set max degrees of random rotation.")
-parser.add_argument("--crop", type=int, default=config.crop, help="Set lenght of image crop.")
+parser.add_argument("--crop", type=int, default=config.crop, help="Set length of image crop.")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
