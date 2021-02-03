@@ -1,5 +1,5 @@
 from torch import nn, cat
-from network_parts import DoubleConv
+from network_parts import DoubleConv, ResidualBlock
 
 
 class UnetGenerator2D(nn.Module):
@@ -19,20 +19,25 @@ class UnetGenerator2D(nn.Module):
         in_channels = 1
         out_channels = filters
         for i in range(depth - 1):
-            self.down_layers += [DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)]
+            self.down_layers += [DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1,
+                                            padding=1)]
             in_channels = out_channels
             out_channels = out_channels * 2
 
         out_channels = in_channels
-        self.bottleneck = DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1)
+        self.bottleneck = DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1,
+                                     padding=1)
         out_channels = out_channels // 2
 
         for i in range(depth - 2):
-            self.up_layers += [DoubleConv(in_channels=in_channels * 2, out_channels=out_channels, kernel_size=3, stride=1, padding=1)]
+            self.up_layers += [DoubleConv(in_channels=in_channels * 2, out_channels=out_channels, kernel_size=3,
+                                          stride=1,
+                                          padding=1)]
             in_channels = in_channels // 2
             out_channels = out_channels // 2
 
-        self.outermost = DoubleConv(in_channels=in_channels * 2, out_channels=1, kernel_size=3, stride=1, padding=1, outermost=True)
+        self.outermost = DoubleConv(in_channels=in_channels * 2, out_channels=1, kernel_size=3, stride=1, padding=1,
+                                    outermost=True)
 
     def forward(self, x):
         down_outputs = []
@@ -51,4 +56,67 @@ class UnetGenerator2D(nn.Module):
         return x
 
 
+class ResNetGenerator2D(nn.Module):
+    def __init__(self, resnet_depth, filters):
+        super().__init__()
+        if resnet_depth < 1:
+            raise ValueError
 
+        if filters < 1:
+            raise ValueError
+
+        layers = []
+        in_channels = 1
+        out_channels = 2 * in_channels
+
+        #  downsampling path
+        layers += [
+            nn.Conv2d(in_channels=1, out_channels=out_channels, kernel_size=7, stride=1,
+                      padding=3,
+                      padding_mode="reflect"),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+            ]
+        in_channels = out_channels
+        out_channels = 2 * out_channels
+
+        for i in range(0, 2):
+            layers += [
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2,
+                          padding=1,
+                          padding_mode="reflect"),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(inplace=True)
+            ]
+            in_channels = out_channels
+            out_channels = out_channels * 2
+
+        #  residual path
+        for i in range(0, resnet_depth):
+            layers += [ResidualBlock(in_channels=in_channels, kernel_size=3)]
+
+        #  upsampling path
+        out_channels = in_channels // 2
+        for i in range(0, 2):
+            layers += [
+                nn.ConvTranspose2d(in_channels=in_channels,
+                                   out_channels=out_channels,
+                                   kernel_size=3,
+                                   stride=2,
+                                   padding=1,
+                                   output_padding=1),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU(inplace=True)
+            ]
+            in_channels = out_channels
+            out_channels = out_channels // 2
+
+        layers += [
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=1, kernel_size=7, padding=3),
+            nn.Tanh()
+        ]
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)

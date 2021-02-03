@@ -5,7 +5,7 @@ from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
-from generators import UnetGenerator2D
+from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, denormalize
 from matplotlib import pyplot as plt
@@ -21,6 +21,8 @@ parser.add_argument("-e", "--epochs", default=config.epochs, type=int,
 parser.add_argument("-b", "--batch-size", default=config.batch_size, type=int,
                     help="Set batch size.")
 parser.add_argument("--gpu", default=config.gpu, nargs="?",
+                    help="Use graphics card during training.")
+parser.add_argument("--generator", default=config.generators, nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generators", default=config.learning_rate_generators, type=float,
                     help="Set learning rate of Generators.")
@@ -61,8 +63,20 @@ dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.ba
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
-netG_A2B = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
-netG_B2A = UnetGenerator2D(depth=args.depth_generators, filters=args.filters_generators).to(device).apply(weights_init)
+print(args.generator)
+if args.generator == "Unet":
+    netG_A2B = UnetGenerator2D(depth=args.depth_generators,
+                               filters=args.filters_generators).to(device).apply(weights_init)
+    netG_B2A = UnetGenerator2D(depth=args.depth_generators,
+                               filters=args.filters_generators).to(device).apply(weights_init)
+elif args.generator == "Resnet":
+    netG_A2B = ResNetGenerator2D(resnet_depth=args.depth_generators,
+                                 filters=args.filters_generators).to(device).apply(weights_init)
+    netG_B2A = ResNetGenerator2D(resnet_depth=args.depth_generators,
+                                 filters=args.filters_generators).to(device).apply(weights_init)
+
+print(netG_A2B)
+
 netD_A = PatchGanDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
 netD_B = PatchGanDiscriminator(

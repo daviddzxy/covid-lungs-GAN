@@ -24,7 +24,7 @@ class Conv(nn.Module):
 
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding, outermost=False):
-        super(DoubleConv, self).__init__()
+        super().__init__()
         self.conv1 = Conv(in_channels, out_channels, kernel_size, stride, padding)
         self.conv2 = Conv(out_channels, out_channels, kernel_size, stride, padding) if outermost is False else Conv(
             out_channels,
@@ -39,3 +39,20 @@ class DoubleConv(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         return x
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, kernel_size, norm_layer=nn.BatchNorm2d):
+        super().__init__()
+        layers = [
+            nn.Conv2d(in_channels, in_channels, kernel_size, padding=1, padding_mode="reflect"),
+            norm_layer(in_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels, in_channels, kernel_size, padding=1, padding_mode="reflect"),
+            norm_layer(in_channels)
+        ]
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return x + self.layers(x)

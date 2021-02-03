@@ -33,6 +33,7 @@ padding_shape = [512, 512, 64]
 #  training parameters
 epochs = 500
 batch_size = 1
+generators = "Unet"
 learning_rate_generators = 0.000005
 learning_rate_discriminator_a = 0.000005
 learning_rate_discriminator_b = 0.000005
