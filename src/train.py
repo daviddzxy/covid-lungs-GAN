@@ -63,7 +63,6 @@ dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.ba
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
-print(args.generator)
 if args.generator == "Unet":
     netG_A2B = UnetGenerator2D(depth=args.depth_generators,
                                filters=args.filters_generators).to(device).apply(weights_init)
@@ -74,8 +73,6 @@ elif args.generator == "Resnet":
                                  filters=args.filters_generators).to(device).apply(weights_init)
     netG_B2A = ResNetGenerator2D(resnet_depth=args.depth_generators,
                                  filters=args.filters_generators).to(device).apply(weights_init)
-
-print(netG_A2B)
 
 netD_A = PatchGanDiscriminator(
     args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
