@@ -46,3 +46,5 @@ save_model = [True, 50]
 learning_rate_decay = [0.95, 10]
 random_rotation = 0
 crop = 0
+identity_weight = 5.0
+cycle_weight = 10.0

@@ -38,6 +38,10 @@ parser.add_argument("--filters-discriminators", default=config.filters_discrimin
                     help="Set multiplier of convolutional filters in discriminators.")
 parser.add_argument("--depth-discriminators", default=config.depth_discriminators, type=int,
                     help="Set number of convolutional layers in discriminator.")
+parser.add_argument("--identity-weight", default=config.identity_weight, type=float,
+                    help="Set weight of identity loss function.")
+parser.add_argument("--cycle-weight", default=config.cycle_weight, type=float,
+                    help="Set weight of cycle loss function.")
 parser.add_argument("--save-model", default=config.save_model, nargs=2,
                     help="Turn on model saving. Second value is frequency of model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
@@ -117,12 +121,14 @@ for epoch in range(epoch_start, args.epochs):
 
         identity_image_A = netG_B2A(real_A)
         identity_image_B = netG_A2B(real_B)
-        loss_identity_A = identity_loss(identity_image_A, real_A) * 5.0
-        loss_identity_B = identity_loss(identity_image_B, real_B) * 5.0
+
+        loss_identity_A = identity_loss(identity_image_A, real_A) * args.identity_weight
+        loss_identity_B = identity_loss(identity_image_B, real_B) * args.identity_weight
 
         fake_image_A = netG_B2A(real_B)
-        fake_output_A = netD_A(fake_image_A)
         fake_image_B = netG_A2B(real_A)
+
+        fake_output_A = netD_A(fake_image_A)
         fake_output_B = netD_B(fake_image_B)
 
         # initialize labels
@@ -133,10 +139,10 @@ for epoch in range(epoch_start, args.epochs):
         loss_GAN_A2B = adversarial_loss(fake_output_B, real_label)
 
         recovered_image_A = netG_B2A(fake_image_B)
-        loss_cycle_ABA = cycle_loss(recovered_image_A, real_A) * 10.0
-
         recovered_image_B = netG_A2B(fake_image_A)
-        loss_cycle_BAB = cycle_loss(recovered_image_B, real_B) * 10.0
+
+        loss_cycle_ABA = cycle_loss(recovered_image_A, real_A) * args.cycle_weight
+        loss_cycle_BAB = cycle_loss(recovered_image_B, real_B) * args.cycle_weight
 
         errG = loss_identity_A + loss_identity_B + loss_GAN_A2B + loss_GAN_B2A + loss_cycle_ABA + loss_cycle_BAB
 
