@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize
+from utils import weights_init, denormalize, Buffer
 from matplotlib import pyplot as plt
 from transformations import RandomRotation, Crop
 import config
@@ -112,6 +112,10 @@ cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
 total_batch_counter = 0
+
+buffer_A = Buffer(config.buffer_length)
+buffer_B = Buffer(config.buffer_length)
+
 for epoch in range(epoch_start, args.epochs):
     print("Current epoch {}.".format(epoch))
     for i, data in enumerate(dataloader):
@@ -158,6 +162,9 @@ for epoch in range(epoch_start, args.epochs):
         errD_real_A = adversarial_loss(real_output_A, real_label)
         errD_real_B = adversarial_loss(real_output_B, real_label)
 
+        fake_image_A = buffer_A.push_and_pop(fake_image_A)
+        fake_image_B = buffer_A.push_and_pop(fake_image_B)
+
         fake_output_A = netD_A(fake_image_A.detach())
         fake_output_B = netD_B(fake_image_B.detach())
 
@@ -180,13 +187,25 @@ for epoch in range(epoch_start, args.epochs):
         total_batch_counter += 1
 
     scheduler_G.step()
+
+    with torch.no_grad():
+        netG_A2B.eval()
+        netG_B2A.eval()
+        fake_B = netG_A2B(real_A)
+        fake_A = netG_B2A(real_B)
+        recovered_A = netG_B2A(fake_B)
+        recovered_B = netG_A2B(fake_A)
+        netG_A2B.train()
+        netG_B2A.train()
+
+
     f = plt.figure()
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 2)
-    plt.imshow(denormalize(fake_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(fake_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(recovered_image_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(recovered_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.tight_layout()
     writer.add_figure("Image outputs/A to B to A", f, epoch)
 
@@ -194,9 +213,9 @@ for epoch in range(epoch_start, args.epochs):
     f.add_subplot(1, 3, 1)
     plt.imshow(denormalize(real_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 2)
-    plt.imshow(denormalize(fake_image_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(fake_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(recovered_image_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(recovered_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.tight_layout()
     writer.add_figure("Image outputs/B to A to B", f, epoch)
 

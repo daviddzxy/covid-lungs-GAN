@@ -12,3 +12,19 @@ def weights_init(m):
 
 def denormalize(image):
     return ((image + 1) / 2) * 255
+
+
+class Buffer():
+    def __init__(self, max_len):
+        assert max_len > 0
+        self.max_len = max_len
+        self.data = []
+
+    def push_and_pop(self, data):
+        if len(self.data) < self.max_len:
+            self.data.append(data)
+            return data
+        else:
+            to_return = self.data.pop(0)
+            self.data.append(data)
+            return to_return
