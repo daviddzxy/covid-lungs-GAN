@@ -35,7 +35,7 @@ for key, path in config.data.items():
             slices, slices_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)
             for i, (_slice, _slice_s) in enumerate(zip(slices, slices_s)):
                 with open(
-                        os.path.join(config.preprocessed_data[key], f.split(".")[0] + "slice " + str(i) + ".pkl"), "wb"
+                        os.path.join(config.cyclegan_data[key], f.split(".")[0] + "slice " + str(i) + ".pkl"), "wb"
                 ) as handle:
                     pickle.dump({"data": _slice, "mask": _slice_s, "resize_factor": resize_factor}, handle)
             logging.info("Preprocessing of file {} finished".format(f))
