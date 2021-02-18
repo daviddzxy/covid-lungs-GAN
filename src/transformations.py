@@ -4,6 +4,32 @@ from torch import from_numpy
 from scipy import ndimage
 
 
+class SelectCovidSlices:
+    """
+    Selects slices with tissue damaged by covid.
+    """
+
+    def __init__(self, covid_tissue_value, min_covid_pixels):
+        """
+        :param covid_tissue_value: Integer value of masked area marking damage caused by covid.
+        :param min_covid_pixels: Sum of pixels that has to be present in the image in order to
+         return the scan slice in result list.
+        """
+        self.covid_tissue_value = covid_tissue_value
+        self.min_covid_pixels = min_covid_pixels
+
+    def __call__(self, mask, volume):
+        new_mask = []
+        new_volume = []
+        for i in range(mask.shape[2]):
+            if np.any(np.isin(mask[:, :, i], self.covid_tissue_value)) and \
+               np.sum(mask[:, :, i] == self.covid_tissue_value) > self.min_covid_pixels:
+                new_mask.append(mask[:, :, i])
+                new_volume.append(volume[:, :, i])
+
+        return new_mask, new_volume
+
+
 class Crop:
     """
     Crop image.
@@ -12,6 +38,7 @@ class Crop:
         """
         :param dimensions: Output shape(H_out, W_out) of cropped image.
         """
+        assert len(dimensions) == 2
         self.dim_x = dimensions[0] // 2
         self.dim_y = dimensions[1] // 2
 

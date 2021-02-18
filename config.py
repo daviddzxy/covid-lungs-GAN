@@ -12,6 +12,8 @@ data = {
         "CT4": "/media/david/DATA/Covid-Data/COVID19_1110/studies/CT-4"
         }
 
+masks = "/media/david/DATA/Covid-Data/COVID19_1110/masks"
+
 preprocessed_data = {
         "CT0": "/media/david/DATA/Covid-Data/Preprocessed_data/CT0",
         "CT1": "/media/david/DATA/Covid-Data/Preprocessed_data/CT1",
@@ -25,10 +27,13 @@ training_data = {
         "B": "/media/david/DATA/Covid-Data/Training_data/B"
 }
 
+preprocessed_data_cgan = "/media/david/DATA/Covid-Data/Cgan_preprocessed_data"
 dataset_metadata = "/media/david/DATA/Covid-Data/Training_data/dataset_metadata.pkl"
 model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]
+covid_tissue_value = 3
+min_covid_pixels = 100
 
 #  training parameters
 epochs = 500
@@ -48,4 +53,4 @@ random_rotation = 8
 crop = 256
 identity_weight = 5.0
 cycle_weight = 10.0
-buffer_length = 2
+buffer_length = 20
