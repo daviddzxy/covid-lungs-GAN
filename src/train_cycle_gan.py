@@ -62,7 +62,10 @@ if args.random_rotation != 0:
 if args.crop != 0:
     _transforms.append(Crop([args.crop, args.crop]))
 
-dataset = CycleGanDataset(_transforms=_transforms)
+dataset = CycleGanDataset(_transforms=_transforms,
+                          images_A=config.cyclegan_data_train["A"],
+                          images_B=config.cyclegan_data_train["B"],
+                          metadata=config.dataset_metadata)
 dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
