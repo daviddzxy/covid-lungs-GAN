@@ -30,7 +30,6 @@ for key, path in config.data.items():
             img_s = mask.apply(sitk_img, batch_size=1, noHU=False).transpose(1, 2, 0)
             img, resize_factor = resample(img, nib_img.header["pixdim"][1:4])
             img_s, _ = resample(img_s, nib_img.header["pixdim"][1:4])
-            img = apply_mask(img, img_s)
             img, img_s = pad_volume(img), pad_volume(img_s)
             img, img_s = remove_empty_slices(img), remove_empty_slices(img_s)
             slices, slices_s = get_middle_lung_slice(img), get_middle_lung_slice(img_s)

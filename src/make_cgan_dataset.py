@@ -41,7 +41,7 @@ for mask_file in os.listdir(config.masks):
         combined_masks, scan_nib_data = select_slices(combined_masks, scan_nib_data)
         for i, (mask, scan) in enumerate(zip(combined_masks, scan_nib_data)):
             with open(
-                    os.path.join(config.preprocessed_data_cgan, "image" + mask_id + "slice " + str(i) + ".pkl"), "wb"
+                    os.path.join(config.cgan_covid_data, "image" + mask_id + "slice " + str(i) + ".pkl"), "wb"
             ) as handle:
                 pickle.dump({"data": scan, "mask": mask, "resize_factor": resize_factor}, handle)
         logging.info("Preprocessing of file {} finished".format(mask_id))

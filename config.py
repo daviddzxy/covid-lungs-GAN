@@ -15,20 +15,20 @@ data = {
 masks = "/media/david/DATA/Covid-Data/COVID19_1110/masks"
 
 preprocessed_data = {
-        "CT0": "/media/david/DATA/Covid-Data/Preprocessed_data/CT0",
-        "CT1": "/media/david/DATA/Covid-Data/Preprocessed_data/CT1",
-        "CT2": "/media/david/DATA/Covid-Data/Preprocessed_data/CT2",
-        "CT3": "/media/david/DATA/Covid-Data/Preprocessed_data/CT3",
-        "CT4": "/media/david/DATA/Covid-Data/Preprocessed_data/CT4"
+        "CT0": "/media/david/DATA/Covid-Data/cyclegan_data/preprocessed_data/CT0",
+        "CT1": "/media/david/DATA/Covid-Data/cyclegan_data/preprocessed_data/CT1",
+        "CT2": "/media/david/DATA/Covid-Data/cyclegan_data/preprocessed_data/CT2",
+        "CT3": "/media/david/DATA/Covid-Data/cyclegan_data/preprocessed_data/CT3",
+        "CT4": "/media/david/DATA/Covid-Data/cyclegan_data/preprocessed_data/CT4"
         }
 
 training_data = {
-        "A": "/media/david/DATA/Covid-Data/Training_data/A",
-        "B": "/media/david/DATA/Covid-Data/Training_data/B"
+        "A": "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/A",
+        "B": "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/B"
 }
 
-preprocessed_data_cgan = "/media/david/DATA/Covid-Data/Cgan_preprocessed_data"
-dataset_metadata = "/media/david/DATA/Covid-Data/Training_data/dataset_metadata.pkl"
+cgan_covid_data = "/media/david/DATA/Covid-Data/cgan_data/"
+dataset_metadata = "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/dataset_metadata.pkl"
 model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]
