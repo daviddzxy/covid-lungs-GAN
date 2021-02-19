@@ -171,6 +171,9 @@ class ApplyMask:
     """
     Applies mask to volume.
     """
+    def __init__(self, value_to_mask):
+        self.value_to_mask = value_to_mask
+
     def __call__(self, volume, mask):
         """
         :param volume: Volume of size (H_in, W_in, D_in) to be masked.
@@ -178,7 +181,7 @@ class ApplyMask:
                      which will be used to keep relevant infromation in volume.
         :return: Returns masked volume.
         """
-        return np.where(mask == 0, mask, volume)
+        return np.where(mask == self.value_to_mask, mask, volume)
 
 
 class ToTensor:
