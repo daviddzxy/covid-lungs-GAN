@@ -23,8 +23,13 @@ cyclegan_data = {
         }
 
 cyclegan_data_train = {
-        "A": "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/A",
-        "B": "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/B"
+        "A": "/media/david/DATA/Covid-Data/cyclegan_data/train/A",
+        "B": "/media/david/DATA/Covid-Data/cyclegan_data/train/B"
+}
+
+cyclegan_data_test = {
+        "A": "/media/david/DATA/Covid-Data/cyclegan_data/test/A",
+        "B": "/media/david/DATA/Covid-Data/cyclegan_data/test/B"
 }
 
 cgan_covid_data = "/media/david/DATA/Covid-Data/cgan_data/data"
@@ -35,8 +40,12 @@ dataset_metadata = "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/da
 model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]
-covid_tissue_value = 3
 min_covid_pixels = 100
+mask_values = {
+        "covid_tissue": 3,
+        "non_lung_tissue": 0
+}
+
 
 #  training parameters
 epochs = 500

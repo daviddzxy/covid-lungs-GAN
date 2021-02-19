@@ -15,7 +15,7 @@ logging.basicConfig(filename=os.path.join(config.preprocessing_logs, "preprocess
                     level=logging.INFO,
                     force=True)
 
-apply_mask = ApplyMask()
+apply_mask = ApplyMask(config.mask_values["non_lung_tissue"])
 pad_volume = PadVolume(config.padding_shape)
 get_middle_lung_slice = GetMiddleSlices(n=5)
 resample = ResampleVolume(new_spacing=(1, 1, 8))
