@@ -32,11 +32,12 @@ cyclegan_data_test = {
         "B": "/media/david/DATA/Covid-Data/cyclegan_data/test/B"
 }
 
+cyclegan_dataset_metadata = "/media/david/DATA/Covid-Data/cyclegan_data/dataset_metadata.pkl"
+
 cgan_covid_data = "/media/david/DATA/Covid-Data/cgan_data/data"
 cgan_covid_data_train = "/media/david/DATA/Covid-Data/cgan_data/train"
 cgan_covid_data_test = "/media/david/DATA/Covid-Data/cgan_data/test"
 
-dataset_metadata = "/media/david/DATA/Covid-Data/Cycle_gan_data/Training_data/dataset_metadata.pkl"
 model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]

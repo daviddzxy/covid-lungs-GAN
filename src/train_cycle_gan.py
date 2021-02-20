@@ -1,6 +1,7 @@
 import os
 import torch
 import itertools
+import pickle
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -9,7 +10,7 @@ from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, denormalize, Buffer
 from matplotlib import pyplot as plt
-from transformations import RandomRotation, Crop
+from transformations import RandomRotation, Crop, ApplyMask, Normalize
 import config
 import argparse
 
@@ -56,16 +57,28 @@ args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
 
-_transforms = []
+rotation = None
 if args.random_rotation != 0:
-    _transforms.append(RandomRotation(args.random_rotation))
-if args.crop != 0:
-    _transforms.append(Crop([args.crop, args.crop]))
+    rotation = RandomRotation(args.random_rotation)
 
-dataset = CycleGanDataset(_transforms=_transforms,
-                          images_A=config.cyclegan_data_train["A"],
+crop = None
+if args.crop != 0:
+    crop = Crop([args.crop, args.crop])
+
+normalize = None
+with open(config.cyclegan_dataset_metadata, "rb") as handle:
+    metadata = pickle.load(handle)
+    normalize = Normalize(metadata["min"], metadata["max"])
+
+mask = ApplyMask(config.mask_values["non_lung_tissue"])
+
+dataset = CycleGanDataset(images_A=config.cyclegan_data_train["A"],
                           images_B=config.cyclegan_data_train["B"],
-                          metadata=config.dataset_metadata)
+                          mask=mask,
+                          rotation=rotation,
+                          crop=crop,
+                          normalize=normalize
+                          )
 dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")

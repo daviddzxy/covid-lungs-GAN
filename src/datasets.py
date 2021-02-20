@@ -1,37 +1,42 @@
 import os
-import config
 import pickle
 from torch.utils.data import Dataset
-from transformations import Normalize, ToTensor
-from torchvision import transforms
+from transformations import ToTensor
 
 
 class CycleGanDataset(Dataset):
-    def __init__(self, images_A, images_B, metadata, _transforms=None):
+    def __init__(self, images_A, images_B, mask=None, rotation=None, crop=None, normalize=None):
         self.dir_A = images_A
         self.dir_B = images_B
         self.files_A = os.listdir(images_A)
-        self.files_B = os.listdir(images_B,)
-        with open(metadata, "rb") as handle:
-            self._dataset_metadata = pickle.load(handle)
-
-        self.transforms = []
-        if _transforms:
-            self.transforms = _transforms
-        self.transforms.extend([
-            Normalize(self._dataset_metadata["min"], self._dataset_metadata["max"]),
-            ToTensor()
-        ])
-
-        self.transforms = transforms.Compose(self.transforms)
+        self.files_B = os.listdir(images_B, )
+        self.mask = mask
+        self.rotate = rotation
+        self.crop = crop
+        self.normalize = normalize
+        self.to_tensor = ToTensor()
 
     def __getitem__(self, index):
         file_handler_A = open(os.path.join(self.dir_A, self.files_A[index % len(self.files_A)]), "rb")
         file_handler_B = open(os.path.join(self.dir_B, self.files_B[index % len(self.files_B)]), "rb")
-        image_A = pickle.load(file_handler_A)["data"]
-        image_B = pickle.load(file_handler_B)["data"]
-        if self.transforms:
-            image_A, image_B = self.transforms(image_A), self.transforms(image_B)
+        A = pickle.load(file_handler_A)
+        B = pickle.load(file_handler_B)
+        image_A, image_B = A["data"], B["data"]
+        mask_A, mask_B = A["mask"], B["mask"]
+
+        if self.normalize:
+            image_A, image_B = self.normalize(image_A), self.normalize(image_B)
+
+        if self.mask:
+            image_A, image_B = self.mask(image_A, mask_A), self.mask(image_B, mask_B)
+
+        if self.rotate:
+            image_A, image_B = self.rotate(image_A), self.rotate(image_B)
+
+        if self.crop:
+            image_A, image_B = self.crop(image_A), self.crop(image_B)
+
+        image_A, image_B = self.to_tensor(image_A), self.to_tensor(image_B)
 
         file_handler_A.close()
         file_handler_B.close()
