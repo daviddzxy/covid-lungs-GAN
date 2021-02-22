@@ -67,7 +67,7 @@ class CganDataset(Dataset):
 
         masked_image = mask(mask, image)
 
-        if self.rotate:
+        if self.rotate and self.max_rotation:
             rand_angle = random.randint(-self.max_rotation, self.max_rotation)
             image, masked_image = self.rotate(image, rand_angle), self.rotate(masked_image, rand_angle)
 
@@ -77,3 +77,7 @@ class CganDataset(Dataset):
         image, masked_image = self.to_tensor(image), self.to_tensor(masked_image)
 
         return image, masked_image
+
+    def __len__(self):
+        return len(self.files)
+
