@@ -179,8 +179,9 @@ class ApplyMask:
     """
     Applies mask to volume.
     """
-    def __init__(self, value_to_mask):
+    def __init__(self, value_to_mask, mask_with_value=None):
         self.value_to_mask = value_to_mask
+        self.mask_with_value = mask_with_value
 
     def __call__(self, volume, mask):
         """
@@ -189,7 +190,10 @@ class ApplyMask:
                      which will be used to keep relevant infromation in volume.
         :return: Returns masked volume.
         """
-        return np.where(mask == self.value_to_mask, mask, volume)
+        mask_with = mask
+        if self.mask_with_value:
+            mask_with = self.mask_with_value
+        return np.where(mask == self.value_to_mask, mask_with, volume)
 
 
 class ToTensor:
