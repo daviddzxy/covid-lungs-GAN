@@ -48,10 +48,12 @@ class CycleGanDataset(Dataset):
 
 
 class CganDataset(Dataset):
-    def __init__(self, images, mask, max_rotation=None, rotation=None, crop=None, normalize=None):
+    def __init__(self, images, mask_covid, mask_lungs=None, max_rotation=None, rotation=None, crop=None,
+                 normalize=None):
         self.dir = images
         self.files = os.listdir(images)
-        self.mask = mask
+        self.mask_covid = mask_covid
+        self.mask_lungs = mask_lungs
         self.max_rotation = max_rotation
         self.rotate = rotation
         self.crop = crop
@@ -61,13 +63,16 @@ class CganDataset(Dataset):
     def __getitem__(self, index):
         file_handler = open(os.path.join(self.dir, self.files[index]), "rb")
         file = pickle.load(file_handler)
-        image, mask = file["data"], file["mask"]
+        image, image_mask = file["data"], file["mask"]
         if self.normalize:
             image = self.normalize(image)
 
-        masked_image = mask(mask, image)
+        if self.mask_lungs:
+            image = self.mask_lungs(image, image_mask)
 
-        if self.rotate and self.max_rotation:
+        masked_image = self.mask_covid(image, image_mask)
+
+        if self.rotate:
             rand_angle = random.randint(-self.max_rotation, self.max_rotation)
             image, masked_image = self.rotate(image, rand_angle), self.rotate(masked_image, rand_angle)
 
