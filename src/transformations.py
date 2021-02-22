@@ -71,6 +71,14 @@ class RandomRotation:
         return ndimage.rotate(image, angle=rand_angle, reshape=False)
 
 
+class Rotation:
+    """
+    Rotates image.
+    """
+    def __call__(self, image, angle):
+        return ndimage.rotate(image, angle=angle, reshape=False)
+
+
 class PadVolume:
     """
     Pads volume with zeros.
