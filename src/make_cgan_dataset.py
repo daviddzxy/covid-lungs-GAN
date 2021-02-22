@@ -20,7 +20,7 @@ logging.basicConfig(filename=os.path.join(config.preprocessing_logs, "preprocess
 
 resample = ResampleVolume(new_spacing=(1, 1, 8))
 pad_volume = PadVolume(config.padding_shape)
-select_slices = SelectCovidSlices(config.covid_tissue_value, config.min_covid_pixels)
+select_slices = SelectCovidSlices(config.mask_values["covid_tissue"], config.min_covid_pixels)
 
 for mask_file in os.listdir(config.masks):
     try:
@@ -33,7 +33,7 @@ for mask_file in os.listdir(config.masks):
         mask_nib_data = mask_nib.get_fdata().transpose(1, 0, 2)
         scan_nib_data = scan_nib.get_fdata().transpose(1, 0, 2)
         lung_mask = segmentation_mask.apply(scan_sitk, batch_size=1, noHU=False).transpose(1, 2, 0)
-        combined_masks = np.where(mask_nib_data == 1, config.covid_tissue_value, lung_mask)
+        combined_masks = np.where(mask_nib_data == 1, config.mask_values["covid_tissue"], lung_mask)
         scan_nib_data, resize_factor = resample(scan_nib_data, scan_nib.header["pixdim"][1:4])
         combined_masks, _ = resample(combined_masks, scan_nib.header["pixdim"][1:4])
         scan_nib_data = pad_volume(scan_nib_data)
@@ -41,7 +41,7 @@ for mask_file in os.listdir(config.masks):
         combined_masks, scan_nib_data = select_slices(combined_masks, scan_nib_data)
         for i, (mask, scan) in enumerate(zip(combined_masks, scan_nib_data)):
             with open(
-                    os.path.join(config.cgan_covid_data, "image" + mask_id + "slice " + str(i) + ".pkl"), "wb"
+                    os.path.join(config.cgan_data, "image" + mask_id + "slice " + str(i) + ".pkl"), "wb"
             ) as handle:
                 pickle.dump({"data": scan, "mask": mask, "resize_factor": resize_factor}, handle)
         logging.info("Preprocessing of file {} finished".format(mask_id))

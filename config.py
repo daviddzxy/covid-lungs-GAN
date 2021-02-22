@@ -34,9 +34,10 @@ cyclegan_data_test = {
 
 cyclegan_dataset_metadata = "/media/david/DATA/Covid-Data/cyclegan_data/dataset_metadata.pkl"
 
-cgan_covid_data = "/media/david/DATA/Covid-Data/cgan_data/data"
-cgan_covid_data_train = "/media/david/DATA/Covid-Data/cgan_data/train"
-cgan_covid_data_test = "/media/david/DATA/Covid-Data/cgan_data/test"
+cgan_dataset_metadata = "/media/david/DATA/Covid-Data/cgan_data/dataset_metadata.pkl"
+cgan_data = "/media/david/DATA/Covid-Data/cgan_data/data"
+cgan_data_train = "/media/david/DATA/Covid-Data/cgan_data/train"
+cgan_data_test = "/media/david/DATA/Covid-Data/cgan_data/test"
 
 model_path = "/media/david/DATA/Covid-lungs-models"
 
@@ -57,8 +58,8 @@ learning_rate_discriminator_a = 0.00002
 learning_rate_discriminator_b = 0.00002
 filters_generators = 16
 depth_generators = 5
-filters_discriminators = 1
-depth_discriminators = 4
+filters_discriminators = 20
+depth_discriminators = 2
 gpu = True
 save_model = [True, 50]
 learning_rate_decay = [0.95, 10]
