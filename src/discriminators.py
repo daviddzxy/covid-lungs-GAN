@@ -3,7 +3,7 @@ from network_parts import Conv
 
 
 class PatchGanDiscriminator(nn.Module):
-    def __init__(self, filters, depth):
+    def __init__(self, filters, depth, in_channels=1):
         super().__init__()
         if depth < 2:
             raise ValueError
@@ -12,7 +12,7 @@ class PatchGanDiscriminator(nn.Module):
             raise ValueError
 
         layers = []
-        layers += [Conv(in_channels=1, out_channels=filters, kernel_size=4, stride=2, padding=1, norm=False, activ="leaky")]
+        layers += [Conv(in_channels=in_channels, out_channels=filters, kernel_size=4, stride=2, padding=1, norm=False, activ="leaky")]
         in_channels = filters
         out_channels = in_channels * 2
         for i in range(depth-2):

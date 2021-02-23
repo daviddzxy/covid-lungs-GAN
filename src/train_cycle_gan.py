@@ -34,7 +34,7 @@ parser.add_argument("--learning-rate-discriminator-b", default=config.learning_r
 parser.add_argument("--filters-generators", default=config.filters_generators, type=int,
                     help="Set multiplier of convolutional filters in generators.")
 parser.add_argument("--depth-generators", default=config.depth_generators, type=int,
-                    help="Set depth of Unet generator architecture")
+                    help="Set depth of generator architecture.")
 parser.add_argument("--filters-discriminators", default=config.filters_discriminators, type=int,
                     help="Set multiplier of convolutional filters in discriminators.")
 parser.add_argument("--depth-discriminators", default=config.depth_discriminators, type=int,
@@ -94,10 +94,11 @@ elif args.generator == "Resnet":
     netG_B2A = ResNetGenerator2D(resnet_depth=args.depth_generators,
                                  filters=args.filters_generators).to(device).apply(weights_init)
 
-netD_A = PatchGanDiscriminator(
-    args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
-netD_B = PatchGanDiscriminator(
-    args.filters_discriminators, args.depth_discriminators).to(device).apply(weights_init)
+netD_A = PatchGanDiscriminator(filters=args.filters_discriminators,
+                               depth=args.depth_discriminators).to(device).apply(weights_init)
+
+netD_B = PatchGanDiscriminator(filters=args.filters_discriminators,
+                               depth=args.depth_discriminators).to(device).apply(weights_init)
 
 optimizer_G = torch.optim.Adam(
     itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators,
