@@ -1,4 +1,3 @@
-import os
 import torch
 import pickle
 from datetime import datetime
@@ -7,7 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, Buffer
+from utils import weights_init, denormalize
 from matplotlib import pyplot as plt
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
@@ -74,7 +73,7 @@ dataset = CganDataset(images=config.cgan_data_train,
                       crop=crop,
                       normalize=normalize)
 
-dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=1, drop_last=True)
+dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
@@ -141,16 +140,13 @@ for epoch in range(0, args.epochs):
         writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
         total_batch_counter += 1
 
-    print(fake_loss_D, real_loss_D)
-    print(pred_fake)
-    print(pred_real)
-    f = plt.figure()
+    f = plt.figure(figsize=(12, 4))
     f.add_subplot(1, 3, 1)
-    plt.imshow(denormalize(image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(masked_image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 2)
     plt.imshow(denormalize(fake_image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(masked_image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
+    plt.imshow(denormalize(image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
     f.tight_layout()
     writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
 
