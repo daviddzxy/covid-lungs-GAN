@@ -11,40 +11,38 @@ from utils import weights_init, denormalize, create_figure
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
+from config import cyclegan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
 writer = SummaryWriter(log_dir=config.training_logs + start_time)
 parser = argparse.ArgumentParser("Training script.")
-parser.add_argument("-e", "--epochs", default=config.epochs, type=int,
+parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
-parser.add_argument("-b", "--batch-size", default=config.batch_size, type=int,
+parser.add_argument("-b", "--batch-size", default=parameters["batch_size"], type=int,
                     help="Set batch size.")
-parser.add_argument("--gpu", default=config.gpu, nargs="?",
+parser.add_argument("--gpu", default=parameters["gpu"], nargs="?",
                     help="Use graphics card during training.")
-parser.add_argument("--generator", default=config.generators, nargs="?", choices=["Unet", "Resnet"],
+parser.add_argument("--generator", default=parameters["generators"], nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
-parser.add_argument("--learning-rate-generator", default=config.learning_rate_generators, type=float,
+parser.add_argument("--learning-rate-generator", default=parameters["learning_rate_generator"], type=float,
                     help="Set learning rate of Generator.")
-parser.add_argument("--learning-rate-discriminator", default=config.learning_rate_discriminator_a, type=float,
+parser.add_argument("--learning-rate-discriminator", default=parameters["learning_rate_discriminator"], type=float,
                     help="Set learning rate of Discriminator.")
-parser.add_argument("--filters-generator", default=config.filters_generators, type=int,
+parser.add_argument("--filters-generator", default=parameters["filters_generator"], type=int,
                     help="Set multiplier of convolutional filters in generator.")
-parser.add_argument("--depth-generator", default=config.depth_generators, type=int,
+parser.add_argument("--depth-generator", default=parameters["depth_generator"], type=int,
                     help="Set depth of generator architecture.")
-parser.add_argument("--filters-discriminator", default=config.filters_discriminators, type=int,
+parser.add_argument("--filters-discriminator", default=parameters["filters_discriminator"], type=int,
                     help="Set multiplier of convolutional filters in discriminator.")
-parser.add_argument("--depth-discriminator", default=config.depth_discriminators, type=int,
+parser.add_argument("--depth-discriminator", default=parameters["depth_discriminator"], type=int,
                     help="Set number of convolutional layers in discriminator.")
-parser.add_argument("--save-model", default=config.save_model, nargs="?",
+parser.add_argument("--save-model", default=parameters["save_model"], nargs="?",
                     help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
-parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
-                    help="Set learning rate decay of generators. First argument is value of decay factor,"
-                         " second value is period of learning rate decay")
-parser.add_argument("--rotation", type=int, default=config.random_rotation,
+parser.add_argument("--rotation", type=int, default=parameters["random_rotation"],
                     help="Set max degrees of random rotation.")
-parser.add_argument("--crop", type=int, default=config.crop, help="Set length of image crop.")
+parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
 args = parser.parse_args()
 
 rotation = None
@@ -153,6 +151,7 @@ try:
             "optim_g": optimizer_G.state_dict(),
             "optim_d": optimizer_D.state_dict(),
         }
+
 except KeyboardInterrupt:
     if args.save_model:
         torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))

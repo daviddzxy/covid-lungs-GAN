@@ -10,48 +10,49 @@ from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, denormalize, create_figure, Buffer
 from transformations import RandomRotation, Crop, ApplyMask, Normalize
-import config
 import argparse
+import config
+from config import cyclegan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
 writer = SummaryWriter(log_dir=config.training_logs + start_time)
 parser = argparse.ArgumentParser("Training script.")
-parser.add_argument("-e", "--epochs", default=config.epochs, type=int,
+parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
-parser.add_argument("-b", "--batch-size", default=config.batch_size, type=int,
+parser.add_argument("-b", "--batch-size", default=parameters["batch_size"], type=int,
                     help="Set batch size.")
-parser.add_argument("--gpu", default=config.gpu, nargs="?",
+parser.add_argument("--gpu", default=parameters["gpu"], nargs="?",
                     help="Use graphics card during training.")
-parser.add_argument("--generator", default=config.generators, nargs="?", choices=["Unet", "Resnet"],
+parser.add_argument("--generator", default=parameters["generators"], nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
-parser.add_argument("--learning-rate-generators", default=config.learning_rate_generators, type=float,
+parser.add_argument("--learning-rate-generators", default=parameters["learning_rate_generators"], type=float,
                     help="Set learning rate of Generators.")
-parser.add_argument("--learning-rate-discriminator-a", default=config.learning_rate_discriminator_a, type=float,
+parser.add_argument("--learning-rate-discriminator-a", default=parameters["learning_rate_discriminator_a"], type=float,
                     help="Set learning rate of Discriminator A.")
-parser.add_argument("--learning-rate-discriminator-b", default=config.learning_rate_discriminator_b, type=float,
+parser.add_argument("--learning-rate-discriminator-b", default=parameters["learning_rate_discriminator_b"], type=float,
                     help="Set learning rate of Discriminator B.")
-parser.add_argument("--filters-generators", default=config.filters_generators, type=int,
+parser.add_argument("--filters-generators", default=parameters["filters_generators"], type=int,
                     help="Set multiplier of convolutional filters in generators.")
-parser.add_argument("--depth-generators", default=config.depth_generators, type=int,
+parser.add_argument("--depth-generators", default=parameters["depth_generators"], type=int,
                     help="Set depth of generator architecture.")
-parser.add_argument("--filters-discriminators", default=config.filters_discriminators, type=int,
+parser.add_argument("--filters-discriminators", default=parameters["filters_discriminators"], type=int,
                     help="Set multiplier of convolutional filters in discriminators.")
-parser.add_argument("--depth-discriminators", default=config.depth_discriminators, type=int,
+parser.add_argument("--depth-discriminators", default=parameters["depth_discriminators"], type=int,
                     help="Set number of convolutional layers in discriminator.")
-parser.add_argument("--identity-weight", default=config.identity_weight, type=float,
+parser.add_argument("--identity-weight", default=parameters["identity_weight"], type=float,
                     help="Set weight of identity loss function.")
-parser.add_argument("--cycle-weight", default=config.cycle_weight, type=float,
+parser.add_argument("--cycle-weight", default=parameters["cycle_weight"], type=float,
                     help="Set weight of cycle loss function.")
-parser.add_argument("--save-model", default=config.save_model, nargs="?",
+parser.add_argument("--save-model", default=parameters["save_model"], nargs="?",
                     help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
-parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
+parser.add_argument("--learning-rate-decay", type=float, default=parameters["learning_rate_decay"], nargs=2,
                     help="Set learning rate decay of generators. First argument is value of decay factor,"
                          " second value is period of learning rate decay")
-parser.add_argument("--random-rotation", type=int, default=config.random_rotation,
+parser.add_argument("--random-rotation", type=int, default=parameters["random_rotation"],
                     help="Set max degrees of random rotation.")
-parser.add_argument("--crop", type=int, default=config.crop, help="Set length of image crop.")
+parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
@@ -129,8 +130,8 @@ identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
 total_batch_counter = 0
 
-buffer_A = Buffer(config.buffer_length)
-buffer_B = Buffer(config.buffer_length)
+buffer_A = Buffer(parameters["buffer_length"])
+buffer_B = Buffer(parameters["buffer_length"])
 
 try:
     for epoch in range(epoch_start, args.epochs):
