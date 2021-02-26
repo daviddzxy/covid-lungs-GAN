@@ -1,13 +1,13 @@
 import torch
 import pickle
+import os
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize
-from matplotlib import pyplot as plt
+from utils import weights_init, denormalize, create_figure
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
@@ -35,8 +35,8 @@ parser.add_argument("--filters-discriminator", default=config.filters_discrimina
                     help="Set multiplier of convolutional filters in discriminator.")
 parser.add_argument("--depth-discriminator", default=config.depth_discriminators, type=int,
                     help="Set number of convolutional layers in discriminator.")
-parser.add_argument("--save-model", default=config.save_model, nargs=2,
-                    help="Turn on model saving. Second value is frequency of model saving.")
+parser.add_argument("--save-model", default=config.save_model, nargs="?",
+                    help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
 parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
@@ -101,54 +101,64 @@ l1 = torch.nn.L1Loss().to(device)
 l2 = torch.nn.MSELoss().to(device)
 
 total_batch_counter = 0
-for epoch in range(0, args.epochs):
-    print("Current epoch {}.".format(epoch))
-    for i, data in enumerate(dataloader):
-        image, masked_image = data
-        image, masked_image = image.float().to(device), masked_image.float().to(device)
-        fake_image = generator(masked_image)
+try:
+    for epoch in range(0, args.epochs):
+        print("Current epoch {}.".format(epoch))
+        for i, data in enumerate(dataloader):
+            image, masked_image = data
+            image, masked_image = image.float().to(device), masked_image.float().to(device)
+            fake_image = generator(masked_image)
 
-        optimizer_D.zero_grad()
+            optimizer_D.zero_grad()
 
-        fake_input_D = torch.cat([fake_image, masked_image], 1)
-        pred_fake = discriminator(fake_input_D.detach())
+            fake_input_D = torch.cat([fake_image, masked_image], 1)
+            pred_fake = discriminator(fake_input_D.detach())
 
-        real_label = torch.ones(pred_fake.shape).to(device)
-        fake_label = torch.zeros(pred_fake.shape).to(device)
+            real_label = torch.ones(pred_fake.shape).to(device)
+            fake_label = torch.zeros(pred_fake.shape).to(device)
 
-        fake_loss_D = l2(pred_fake, fake_label)
+            fake_loss_D = l2(pred_fake, fake_label)
 
-        real_input_D = torch.cat([image, masked_image], 1)
-        pred_real = discriminator(real_input_D)
-        real_loss_D = l2(pred_real, real_label)
+            real_input_D = torch.cat([image, masked_image], 1)
+            pred_real = discriminator(real_input_D)
+            real_loss_D = l2(pred_real, real_label)
 
-        loss_D = (fake_loss_D + real_loss_D) * 0.5
-        loss_D.backward()
-        optimizer_D.step()
+            loss_D = (fake_loss_D + real_loss_D) * 0.5
+            loss_D.backward()
+            optimizer_D.step()
 
-        optimizer_G.zero_grad()
-        ake_input_D = torch.cat([fake_image, masked_image], 1)
-        pred_fake = discriminator(fake_input_D)
-        adversarial_loss = l2(pred_fake, real_label)
-        identity_loss = l1(fake_image, image)
+            optimizer_G.zero_grad()
+            ake_input_D = torch.cat([fake_image, masked_image], 1)
+            pred_fake = discriminator(fake_input_D)
+            adversarial_loss = l2(pred_fake, real_label)
+            identity_loss = l1(fake_image, image)
 
-        loss_G = adversarial_loss + identity_loss
-        loss_G.backward()
-        optimizer_G.step()
+            loss_G = adversarial_loss + identity_loss
+            loss_G.backward()
+            optimizer_G.step()
 
-        writer.add_scalar("Loss cgan/Generator Error", loss_G, total_batch_counter)
-        writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
-        total_batch_counter += 1
+            writer.add_scalar("Loss cgan/Generator Error", loss_G, total_batch_counter)
+            writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
+            total_batch_counter += 1
 
-    f = plt.figure(figsize=(12, 4))
-    f.add_subplot(1, 3, 1)
-    plt.imshow(denormalize(masked_image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 2)
-    plt.imshow(denormalize(fake_image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(image[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.tight_layout()
-    writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
+        f = create_figure([denormalize(masked_image[0, 0, :, :].detach().cpu()),
+                           denormalize(fake_image[0, 0, :, :].detach().cpu()),
+                           denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
+
+        writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
+        state = {
+            "epoch": epoch,
+            "gen": generator.state_dict(),
+            "disc": discriminator.state_dict(),
+            "optim_g": optimizer_G.state_dict(),
+            "optim_d": optimizer_D.state_dict(),
+        }
+except KeyboardInterrupt:
+    if args.save_model:
+        torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
+
+if args.save_model:
+    torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
 
 writer.flush()
 writer.close()

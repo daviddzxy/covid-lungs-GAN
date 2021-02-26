@@ -8,8 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, Buffer
-from matplotlib import pyplot as plt
+from utils import weights_init, denormalize, create_figure, Buffer
 from transformations import RandomRotation, Crop, ApplyMask, Normalize
 import config
 import argparse
@@ -43,8 +42,8 @@ parser.add_argument("--identity-weight", default=config.identity_weight, type=fl
                     help="Set weight of identity loss function.")
 parser.add_argument("--cycle-weight", default=config.cycle_weight, type=float,
                     help="Set weight of cycle loss function.")
-parser.add_argument("--save-model", default=config.save_model, nargs=2,
-                    help="Turn on model saving. Second value is frequency of model saving.")
+parser.add_argument("--save-model", default=config.save_model, nargs="?",
+                    help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
 parser.add_argument("--learning-rate-decay", type=float, default=config.learning_rate_decay, nargs=2,
@@ -133,111 +132,104 @@ total_batch_counter = 0
 buffer_A = Buffer(config.buffer_length)
 buffer_B = Buffer(config.buffer_length)
 
-for epoch in range(epoch_start, args.epochs):
-    print("Current epoch {}.".format(epoch))
-    for i, data in enumerate(dataloader):
-        real_A, real_B = data
-        real_A, real_B = real_A.float().to(device), real_B.float().to(device)
-        optimizer_G.zero_grad()
+try:
+    for epoch in range(epoch_start, args.epochs):
+        print("Current epoch {}.".format(epoch))
+        for i, data in enumerate(dataloader):
+            real_A, real_B = data
+            real_A, real_B = real_A.float().to(device), real_B.float().to(device)
+            optimizer_G.zero_grad()
 
-        identity_image_A = netG_B2A(real_A)
-        identity_image_B = netG_A2B(real_B)
+            identity_image_A = netG_B2A(real_A)
+            identity_image_B = netG_A2B(real_B)
 
-        loss_identity_A = identity_loss(identity_image_A, real_A) * args.identity_weight
-        loss_identity_B = identity_loss(identity_image_B, real_B) * args.identity_weight
+            loss_identity_A = identity_loss(identity_image_A, real_A) * args.identity_weight
+            loss_identity_B = identity_loss(identity_image_B, real_B) * args.identity_weight
 
-        fake_image_A = netG_B2A(real_B)
-        fake_image_B = netG_A2B(real_A)
+            fake_image_A = netG_B2A(real_B)
+            fake_image_B = netG_A2B(real_A)
 
-        fake_output_A = netD_A(fake_image_A)
-        fake_output_B = netD_B(fake_image_B)
+            fake_output_A = netD_A(fake_image_A)
+            fake_output_B = netD_B(fake_image_B)
 
-        # initialize labels
-        real_label = torch.ones(fake_output_A.shape).to(device)
-        fake_label = torch.zeros(fake_output_A.shape).to(device)
+            # initialize labels
+            real_label = torch.ones(fake_output_A.shape).to(device)
+            fake_label = torch.zeros(fake_output_A.shape).to(device)
 
-        loss_GAN_B2A = adversarial_loss(fake_output_A, real_label)
-        loss_GAN_A2B = adversarial_loss(fake_output_B, real_label)
+            loss_GAN_B2A = adversarial_loss(fake_output_A, real_label)
+            loss_GAN_A2B = adversarial_loss(fake_output_B, real_label)
 
-        recovered_image_A = netG_B2A(fake_image_B)
-        recovered_image_B = netG_A2B(fake_image_A)
+            recovered_image_A = netG_B2A(fake_image_B)
+            recovered_image_B = netG_A2B(fake_image_A)
 
-        loss_cycle_ABA = cycle_loss(recovered_image_A, real_A) * args.cycle_weight
-        loss_cycle_BAB = cycle_loss(recovered_image_B, real_B) * args.cycle_weight
+            loss_cycle_ABA = cycle_loss(recovered_image_A, real_A) * args.cycle_weight
+            loss_cycle_BAB = cycle_loss(recovered_image_B, real_B) * args.cycle_weight
 
-        errG = loss_identity_A + loss_identity_B + loss_GAN_A2B + loss_GAN_B2A + loss_cycle_ABA + loss_cycle_BAB
+            errG = loss_identity_A + loss_identity_B + loss_GAN_A2B + loss_GAN_B2A + loss_cycle_ABA + loss_cycle_BAB
 
-        errG.backward()
-        optimizer_G.step()
+            errG.backward()
+            optimizer_G.step()
 
-        optimizer_D_A.zero_grad()
-        optimizer_D_B.zero_grad()
+            optimizer_D_A.zero_grad()
+            optimizer_D_B.zero_grad()
 
-        real_output_A = netD_A(real_A)
-        real_output_B = netD_B(real_B)
+            real_output_A = netD_A(real_A)
+            real_output_B = netD_B(real_B)
 
-        errD_real_A = adversarial_loss(real_output_A, real_label)
-        errD_real_B = adversarial_loss(real_output_B, real_label)
+            errD_real_A = adversarial_loss(real_output_A, real_label)
+            errD_real_B = adversarial_loss(real_output_B, real_label)
 
-        fake_image_A = buffer_A.push_and_pop(fake_image_A)
-        fake_image_B = buffer_A.push_and_pop(fake_image_B)
+            fake_image_A = buffer_A.push_and_pop(fake_image_A)
+            fake_image_B = buffer_A.push_and_pop(fake_image_B)
 
-        fake_output_A = netD_A(fake_image_A.detach())
-        fake_output_B = netD_B(fake_image_B.detach())
+            fake_output_A = netD_A(fake_image_A.detach())
+            fake_output_B = netD_B(fake_image_B.detach())
 
-        errD_fake_A = adversarial_loss(fake_output_A, fake_label)
-        errD_fake_B = adversarial_loss(fake_output_B, fake_label)
+            errD_fake_A = adversarial_loss(fake_output_A, fake_label)
+            errD_fake_B = adversarial_loss(fake_output_B, fake_label)
 
-        errD_A = (errD_real_A + errD_fake_A) / 2
-        errD_B = (errD_real_B + errD_fake_B) / 2
+            errD_A = (errD_real_A + errD_fake_A) / 2
+            errD_B = (errD_real_B + errD_fake_B) / 2
 
-        errD_A.backward()
-        optimizer_D_A.step()
+            errD_A.backward()
+            optimizer_D_A.step()
 
-        errD_B.backward()
-        optimizer_D_B.step()
+            errD_B.backward()
+            optimizer_D_B.step()
 
-        # Logging
-        writer.add_scalar("Loss/Generator Error", errG, total_batch_counter)
-        writer.add_scalar("Loss/DiscriminatorA Error", errD_A, total_batch_counter)
-        writer.add_scalar("Loss/DiscriminatorB Error", errD_B, total_batch_counter)
-        total_batch_counter += 1
+            # Logging
+            writer.add_scalar("Loss/Generator Error", errG, total_batch_counter)
+            writer.add_scalar("Loss/DiscriminatorA Error", errD_A, total_batch_counter)
+            writer.add_scalar("Loss/DiscriminatorB Error", errD_B, total_batch_counter)
+            total_batch_counter += 1
 
-    scheduler_G.step()
+        scheduler_G.step()
 
-    with torch.no_grad():
-        netG_A2B.eval()
-        netG_B2A.eval()
-        fake_B = netG_A2B(real_A)
-        fake_A = netG_B2A(real_B)
-        recovered_A = netG_B2A(fake_B)
-        recovered_B = netG_A2B(fake_A)
-        netG_A2B.train()
-        netG_B2A.train()
+        with torch.no_grad():
+            netG_A2B.eval()
+            netG_B2A.eval()
+            fake_B = netG_A2B(real_A)
+            fake_A = netG_B2A(real_B)
+            recovered_A = netG_B2A(fake_B)
+            recovered_B = netG_A2B(fake_A)
+            netG_A2B.train()
+            netG_B2A.train()
 
+        f = create_figure([denormalize(real_A[0, 0, :, :].detach().cpu()),
+                           denormalize(fake_B[0, 0, :, :].detach().cpu()),
+                           denormalize(recovered_A[0, 0, :, :].detach().cpu())],
+                          figsize=(12, 4)
+                          )
+        writer.add_figure("Image outputs/A to B to A", f, epoch)
 
-    f = plt.figure()
-    f.add_subplot(1, 3, 1)
-    plt.imshow(denormalize(real_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 2)
-    plt.imshow(denormalize(fake_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(recovered_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.tight_layout()
-    writer.add_figure("Image outputs/A to B to A", f, epoch)
+        f = create_figure([denormalize(real_B[0, 0, :, :].detach().cpu()),
+                           denormalize(fake_A[0, 0, :, :].detach().cpu()),
+                           denormalize(recovered_B[0, 0, :, :].detach().cpu())],
+                          figsize=(12, 4)
+                          )
+        writer.add_figure("Image outputs/B to A to B", f, epoch)
 
-    f = plt.figure()
-    f.add_subplot(1, 3, 1)
-    plt.imshow(denormalize(real_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 2)
-    plt.imshow(denormalize(fake_A[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.add_subplot(1, 3, 3)
-    plt.imshow(denormalize(recovered_B[0, 0, :, :].detach().cpu()), cmap=plt.cm.gray)
-    f.tight_layout()
-    writer.add_figure("Image outputs/B to A to B", f, epoch)
-
-    if args.save_model[0] and epoch % args.save_model[1] == 0:
-        torch.save({
+        state = {
             "epoch": epoch,
             "gen_a2b": netG_A2B.state_dict(),
             "gen_b2a": netG_B2A.state_dict(),
@@ -247,8 +239,15 @@ for epoch in range(epoch_start, args.epochs):
             "optim_d_a": optimizer_D_A.state_dict(),
             "optim_d_b": optimizer_D_B.state_dict(),
             "scheduler_g": scheduler_G.state_dict()
-            }, os.path.join(config.model_path, "{}-epoch-{}.pt".format(start_time, epoch))
-        )
+        }
+
+except KeyboardInterrupt:
+    if args.save_model:
+        torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
+
+
+if args.save_model:
+    torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
 
 writer.flush()
 writer.close()

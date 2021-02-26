@@ -1,5 +1,5 @@
 import torch
-
+import matplotlib.pyplot as plt
 
 def weights_init(m):
     classname = m.__class__.__name__
@@ -12,6 +12,16 @@ def weights_init(m):
 
 def denormalize(image):
     return ((image + 1) / 2) * 255
+
+
+def create_figure(data, figsize):
+    f = plt.figure(figsize=figsize)
+    fig_len = len(data)
+    for i, d in enumerate(data, 1):
+        f.add_subplot(1, fig_len, i)
+        plt.imshow(d, cmap=plt.cm.gray)
+    f.tight_layout()
+    return f
 
 
 class Buffer():
