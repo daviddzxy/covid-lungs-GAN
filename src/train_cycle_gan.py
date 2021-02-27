@@ -15,7 +15,7 @@ import config
 from config import cyclegan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
-writer = SummaryWriter(log_dir=config.training_logs + start_time)
+writer = SummaryWriter(log_dir=config.tensorboard_logs + start_time)
 parser = argparse.ArgumentParser("Training script.")
 parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")

@@ -2,7 +2,8 @@ import os
 
 project_root = os.path.dirname(os.path.realpath(__file__))
 preprocessing_logs = os.path.join(project_root, "logs/preprocessing_logs/")
-training_logs = os.path.join(project_root, "logs/training_logs/")
+tensorboard_logs = os.path.join(project_root, "logs/tensorboard_logs/")
+image_logs = os.path.join(project_root, "logs/image_logs")
 
 data = {
     "CT0": "/media/david/DATA/Covid-Data/COVID19_1110/studies/CT-0",

@@ -7,14 +7,14 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, create_figure
+from utils import weights_init, denormalize, create_figure, log_images
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
-from config import cyclegan_parameters as parameters
+from config import cgan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
-writer = SummaryWriter(log_dir=config.training_logs + start_time)
+writer = SummaryWriter(log_dir=config.tensorboard_logs + start_time)
 parser = argparse.ArgumentParser("Training script.")
 parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
@@ -143,6 +143,12 @@ try:
                            denormalize(fake_image[0, 0, :, :].detach().cpu()),
                            denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
 
+        log_images([masked_image, fake_image, image],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="train",
+                   figsize=(12, 4))
         writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
         state = {
             "epoch": epoch,

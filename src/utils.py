@@ -1,4 +1,5 @@
 import torch
+import os
 import matplotlib.pyplot as plt
 
 def weights_init(m):
@@ -22,6 +23,22 @@ def create_figure(data, figsize):
         plt.imshow(d, cmap=plt.cm.gray)
     f.tight_layout()
     return f
+
+
+def log_images(image_batches, path, run_id, step, context, figsize):
+    curr_dir = os.path.join(path, run_id)
+    if not os.path.isdir(curr_dir):
+        os.mkdir(curr_dir)
+        os.mkdir(os.path.join(curr_dir, context))
+
+    image_list = []
+    for images in image_batches:
+        image_list.append(denormalize(images.detach().cpu()))
+
+    for i in range(image_batches[0].shape[0]):
+        for channel in range(image_batches[0].shape[1]):
+            create_figure([image[i, channel, :, :] for image in image_list], figsize)
+            plt.savefig(os.path.join(curr_dir, context, str(step) + " " + str(i) + " " + str(channel)), format="png")
 
 
 class Buffer():
