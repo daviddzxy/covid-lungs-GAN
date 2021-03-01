@@ -22,7 +22,7 @@ parser.add_argument("-b", "--batch-size", default=parameters["batch_size"], type
                     help="Set batch size.")
 parser.add_argument("--gpu", default=parameters["gpu"], nargs="?",
                     help="Use graphics card during training.")
-parser.add_argument("--generator", default=parameters["generators"], nargs="?", choices=["Unet", "Resnet"],
+parser.add_argument("--generator", default=parameters["generator"], nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generator", default=parameters["learning_rate_generator"], type=float,
                     help="Set learning rate of Generator.")
@@ -99,71 +99,58 @@ l1 = torch.nn.L1Loss().to(device)
 l2 = torch.nn.MSELoss().to(device)
 
 total_batch_counter = 0
-try:
-    for epoch in range(0, args.epochs):
-        print("Current epoch {}.".format(epoch))
-        for i, data in enumerate(dataloader):
-            image, masked_image = data
-            image, masked_image = image.float().to(device), masked_image.float().to(device)
-            fake_image = generator(masked_image)
+for epoch in range(0, args.epochs):
+    print("Current epoch {}.".format(epoch))
+    for i, data in enumerate(dataloader):
+        image, masked_image = data
+        image, masked_image = image.float().to(device), masked_image.float().to(device)
+        fake_image = generator(masked_image)
 
-            optimizer_D.zero_grad()
+        optimizer_D.zero_grad()
 
-            fake_input_D = torch.cat([fake_image, masked_image], 1)
-            pred_fake = discriminator(fake_input_D.detach())
+        fake_input_D = torch.cat([fake_image, masked_image], 1)
+        pred_fake = discriminator(fake_input_D.detach())
 
-            real_label = torch.ones(pred_fake.shape).to(device)
-            fake_label = torch.zeros(pred_fake.shape).to(device)
+        real_label = torch.ones(pred_fake.shape).to(device)
+        fake_label = torch.zeros(pred_fake.shape).to(device)
 
-            fake_loss_D = l2(pred_fake, fake_label)
+        fake_loss_D = l2(pred_fake, fake_label)
 
-            real_input_D = torch.cat([image, masked_image], 1)
-            pred_real = discriminator(real_input_D)
-            real_loss_D = l2(pred_real, real_label)
+        real_input_D = torch.cat([image, masked_image], 1)
+        pred_real = discriminator(real_input_D)
+        real_loss_D = l2(pred_real, real_label)
 
-            loss_D = (fake_loss_D + real_loss_D) * 0.5
-            loss_D.backward()
-            optimizer_D.step()
+        loss_D = (fake_loss_D + real_loss_D) * 0.5
+        loss_D.backward()
+        optimizer_D.step()
 
-            optimizer_G.zero_grad()
-            ake_input_D = torch.cat([fake_image, masked_image], 1)
-            pred_fake = discriminator(fake_input_D)
-            adversarial_loss = l2(pred_fake, real_label)
-            identity_loss = l1(fake_image, image)
+        optimizer_G.zero_grad()
+        ake_input_D = torch.cat([fake_image, masked_image], 1)
+        pred_fake = discriminator(fake_input_D)
+        adversarial_loss = l2(pred_fake, real_label)
+        identity_loss = l1(fake_image, image)
 
-            loss_G = adversarial_loss + identity_loss
-            loss_G.backward()
-            optimizer_G.step()
+        loss_G = adversarial_loss + identity_loss
+        loss_G.backward()
+        optimizer_G.step()
 
-            writer.add_scalar("Loss cgan/Generator Error", loss_G, total_batch_counter)
-            writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
-            total_batch_counter += 1
+        writer.add_scalar("Loss cgan/Generator Error", loss_G, total_batch_counter)
+        writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
+        total_batch_counter += 1
 
-        f = create_figure([denormalize(masked_image[0, 0, :, :].detach().cpu()),
-                           denormalize(fake_image[0, 0, :, :].detach().cpu()),
-                           denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
+    f = create_figure([denormalize(masked_image[0, 0, :, :].detach().cpu()),
+                       denormalize(fake_image[0, 0, :, :].detach().cpu()),
+                       denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
 
-        log_images([masked_image, fake_image, image],
-                   path=config.image_logs,
-                   run_id=start_time,
-                   step=epoch,
-                   context="train",
-                   figsize=(12, 4))
-        writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
-        state = {
-            "epoch": epoch,
-            "gen": generator.state_dict(),
-            "disc": discriminator.state_dict(),
-            "optim_g": optimizer_G.state_dict(),
-            "optim_d": optimizer_D.state_dict(),
-        }
+    writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
 
-except KeyboardInterrupt:
-    if args.save_model:
-        torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
+    log_images([masked_image, fake_image, image],
+               path=config.image_logs,
+               run_id=start_time,
+               step=epoch,
+               context="train",
+               figsize=(12, 4))
 
-if args.save_model:
-    torch.save(state, os.path.join(config.model_path, "{}.pt".format(start_time)))
 
 writer.flush()
 writer.close()
