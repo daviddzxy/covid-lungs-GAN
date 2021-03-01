@@ -71,7 +71,11 @@ dataset = CganDataset(images=config.cgan_data_train,
                       crop=crop,
                       normalize=normalize)
 
+valid_dataset = CganDataset(images=config.cgan_data_test, mask_covid=mask_covid, normalize=normalize)
+
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
+
+valid_dataloader = DataLoader(dataset, shuffle=False, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
@@ -138,6 +142,7 @@ for epoch in range(0, args.epochs):
         writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
         total_batch_counter += 1
 
+
     f = create_figure([denormalize(masked_image[0, 0, :, :].detach().cpu()),
                        denormalize(fake_image[0, 0, :, :].detach().cpu()),
                        denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
@@ -150,6 +155,20 @@ for epoch in range(0, args.epochs):
                step=epoch,
                context="train",
                figsize=(12, 4))
+
+    with torch.no_grad():
+        data = next(iter(valid_dataloader))
+        image, masked_image = data
+        image, masked_image = image.float().to(device), masked_image.float().to(device)
+        generator.eval()
+        fake_image = generator(masked_image)
+        generator.train()
+        log_images([masked_image, fake_image, image],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="valid",
+                   figsize=(12, 4))
 
 
 writer.flush()

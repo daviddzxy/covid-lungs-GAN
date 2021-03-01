@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, create_figure, Buffer
+from utils import weights_init, denormalize, create_figure, Buffer, log_images
 from transformations import RandomRotation, Crop, ApplyMask, Normalize
 import argparse
 import config
@@ -77,7 +77,14 @@ dataset = CycleGanDataset(images_A=config.cyclegan_data_train["A"],
                           crop=crop,
                           normalize=normalize
                           )
-dataloader = DataLoader(dataset, shuffle=True, num_workers=2, batch_size=args.batch_size, drop_last=True)
+valid_dataset = CycleGanDataset(images_A=config.cyclegan_data_test["A"],
+                                images_B=config.cyclegan_data_test["B"],
+                                mask=mask,
+                                normalize=normalize)
+
+dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
+
+valid_dataloader = DataLoader(dataset, shuffle=False, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
@@ -192,30 +199,63 @@ for epoch in range(epoch_start, args.epochs):
 
     scheduler_G.step()
 
-    with torch.no_grad():
-        netG_A2B.eval()
-        netG_B2A.eval()
-        fake_B = netG_A2B(real_A)
-        fake_A = netG_B2A(real_B)
-        recovered_A = netG_B2A(fake_B)
-        recovered_B = netG_A2B(fake_A)
-        netG_A2B.train()
-        netG_B2A.train()
-
     f = create_figure([denormalize(real_A[0, 0, :, :].detach().cpu()),
-                       denormalize(fake_B[0, 0, :, :].detach().cpu()),
-                       denormalize(recovered_A[0, 0, :, :].detach().cpu())],
+                       denormalize(fake_image_B[0, 0, :, :].detach().cpu()),
+                       denormalize(recovered_image_A[0, 0, :, :].detach().cpu())],
                       figsize=(12, 4)
                       )
     writer.add_figure("Image outputs/A to B to A", f, epoch)
 
     f = create_figure([denormalize(real_B[0, 0, :, :].detach().cpu()),
-                       denormalize(fake_A[0, 0, :, :].detach().cpu()),
-                       denormalize(recovered_B[0, 0, :, :].detach().cpu())],
+                       denormalize(fake_image_A[0, 0, :, :].detach().cpu()),
+                       denormalize(recovered_image_B[0, 0, :, :].detach().cpu())],
                       figsize=(12, 4)
                       )
     writer.add_figure("Image outputs/B to A to B", f, epoch)
 
+    log_images([real_A, fake_image_B, recovered_image_A],
+               path=config.image_logs,
+               run_id=start_time,
+               step=epoch,
+               context="train_ABA",
+               figsize=(12, 4))
+
+    log_images([real_B, fake_image_A, recovered_image_B],
+               path=config.image_logs,
+               run_id=start_time,
+               step=epoch,
+               context="train_BAB",
+               figsize=(12, 4))
+
+    with torch.no_grad():
+        data = next(iter(valid_dataloader))
+        real_A, real_B = data
+        real_A, real_B = real_A.float().to(device), real_B.float().to(device)
+        netG_B2A.eval()
+        netG_A2B.eval()
+
+        fake_image_A = netG_B2A(real_B)
+        fake_image_B = netG_A2B(real_A)
+
+        recovered_image_A = netG_B2A(fake_image_B)
+        recovered_image_B = netG_A2B(fake_image_A)
+
+        netG_B2A.train()
+        netG_A2B.train()
+
+        log_images([real_A, fake_image_B, recovered_image_A],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="valid_ABA",
+                   figsize=(12, 4))
+
+        log_images([real_B, fake_image_A, recovered_image_B],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="valid_BAB",
+                   figsize=(12, 4))
 
 writer.flush()
 writer.close()

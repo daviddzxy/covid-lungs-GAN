@@ -2,6 +2,7 @@ import torch
 import os
 import matplotlib.pyplot as plt
 
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find("Conv2d") != -1:
@@ -26,10 +27,14 @@ def create_figure(data, figsize):
 
 
 def log_images(image_batches, path, run_id, step, context, figsize):
+    step = str(step)
     curr_dir = os.path.join(path, run_id)
     if not os.path.isdir(curr_dir):
         os.mkdir(curr_dir)
+    if not os.path.isdir(os.path.join(curr_dir, context)):
         os.mkdir(os.path.join(curr_dir, context))
+    if not os.path.isdir(os.path.join(curr_dir, context, step)):
+        os.mkdir(os.path.join(curr_dir, context, step))
 
     image_list = []
     for images in image_batches:
@@ -38,7 +43,7 @@ def log_images(image_batches, path, run_id, step, context, figsize):
     for i in range(image_batches[0].shape[0]):
         for channel in range(image_batches[0].shape[1]):
             create_figure([image[i, channel, :, :] for image in image_list], figsize)
-            plt.savefig(os.path.join(curr_dir, context, str(step) + " " + str(i) + " " + str(channel)), format="png")
+            plt.savefig(os.path.join(curr_dir, context, step, str(i) + " " + str(channel)), format="png")
 
 
 class Buffer():
