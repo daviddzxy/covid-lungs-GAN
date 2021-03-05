@@ -1,13 +1,12 @@
 import torch
 import pickle
-import os
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, create_figure, log_images
+from utils import weights_init, denormalize, create_figure, log_images, log_heatmap
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
@@ -169,6 +168,13 @@ for epoch in range(0, args.epochs):
                    step=epoch,
                    context="valid",
                    figsize=(12, 4))
+
+        log_heatmap(image, fake_image,
+                    path=config.image_logs,
+                    run_id=start_time,
+                    step=epoch,
+                    context="heat",
+                    figsize=(14, 5))
 
 
 writer.flush()

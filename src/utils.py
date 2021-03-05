@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import os
 import matplotlib.pyplot as plt
 
@@ -44,6 +45,37 @@ def log_images(image_batches, path, run_id, step, context, figsize):
         for channel in range(image_batches[0].shape[1]):
             create_figure([image[i, channel, :, :] for image in image_list], figsize)
             plt.savefig(os.path.join(curr_dir, context, step, str(i) + " " + str(channel)), format="png")
+
+
+def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, figsize):
+    step = str(step)
+    curr_dir = os.path.join(path, run_id)
+    if not os.path.isdir(curr_dir):
+        os.mkdir(curr_dir)
+    if not os.path.isdir(os.path.join(curr_dir, context)):
+        os.mkdir(os.path.join(curr_dir, context))
+    if not os.path.isdir(os.path.join(curr_dir, context, step)):
+        os.mkdir(os.path.join(curr_dir, context, step))
+
+    image_list_A = []
+    image_list_B = []
+    for image_A, image_B in zip(image_batches_A, image_batches_B):
+        image_list_A.append(denormalize(image_A.detach().cpu()))
+        image_list_B.append(denormalize(image_B.detach().cpu()))
+
+    for i, (image_A, image_B) in enumerate(zip(image_list_A, image_list_B)):
+        f = plt.figure(figsize=figsize)
+        f.add_subplot(1, 3, 1)
+        plt.imshow(image_A[0, :, :], cmap=plt.cm. gray)
+        f.add_subplot(1, 3, 2)
+        plt.imshow(image_B[0, :, :], cmap=plt.cm. gray)
+        ax = f.add_subplot(1, 3, 3)
+        abs_img = np.abs(image_A - image_B)
+        abs_img = abs_img[0, :, :]
+        im = plt.imshow(abs_img, cmap='gist_heat')
+        cax = f.add_axes([ax.get_position().x1 + 0.01, ax.get_position().y0, 0.02, ax.get_position().height])
+        plt.colorbar(im, cax=cax)
+        plt.savefig(os.path.join(curr_dir, context, step, str(i)), format="png")
 
 
 class Buffer():
