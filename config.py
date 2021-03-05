@@ -74,7 +74,7 @@ cyclegan_parameters = {
 cgan_parameters = {
     "epochs": 500,
     "batch_size": 1,
-    "generators": "Unet",
+    "generator": "Unet",
     "learning_rate_generator": 0.0002,
     "learning_rate_discriminator": 0.00002,
     "filters_generator": 16,

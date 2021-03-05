@@ -226,4 +226,6 @@ class Normalize:
         self.max = dataset_max
 
     def __call__(self, ndarray):
+        ndarray = ndarray[ndarray > self.max] = self.max
+        ndarray = ndarray[ndarray < self.min] = self.min
         return 2 * ((ndarray - self.min) / (self.max - self.min)) - 1
