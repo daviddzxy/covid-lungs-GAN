@@ -27,15 +27,11 @@ cyclegan_data_train = {
     "A": "/media/david/DATA/Covid-Data/cyclegan_data/train/A",
     "B": "/media/david/DATA/Covid-Data/cyclegan_data/train/B"
 }
-
 cyclegan_data_test = {
     "A": "/media/david/DATA/Covid-Data/cyclegan_data/test/A",
     "B": "/media/david/DATA/Covid-Data/cyclegan_data/test/B"
 }
 
-cyclegan_dataset_metadata = "/media/david/DATA/Covid-Data/cyclegan_data/dataset_metadata.pkl"
-
-cgan_dataset_metadata = "/media/david/DATA/Covid-Data/cgan_data/dataset_metadata.pkl"
 cgan_data = "/media/david/DATA/Covid-Data/cgan_data/data"
 cgan_data_train = "/media/david/DATA/Covid-Data/cgan_data/train"
 cgan_data_test = "/media/david/DATA/Covid-Data/cgan_data/test"
@@ -44,6 +40,7 @@ model_path = "/media/david/DATA/Covid-lungs-models"
 
 padding_shape = [512, 512, 64]
 min_covid_pixels = 100
+
 mask_values = {
     "covid_tissue": 3,
     "non_lung_tissue": 0

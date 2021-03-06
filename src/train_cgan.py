@@ -1,5 +1,4 @@
 import torch
-import pickle
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter

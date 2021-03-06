@@ -1,14 +1,13 @@
 import os
 import torch
 import itertools
-import pickle
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from datasets import CycleGanDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, create_figure, Buffer, log_images
+from utils import weights_init, create_figure, Buffer, log_images
 from transformations import RandomRotation, Crop, ApplyMask, Normalize
 import argparse
 import config
