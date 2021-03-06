@@ -221,9 +221,9 @@ class Normalize:
     """
     Normalize ndarray between values -1, 1.
     """
-    def __init__(self, dataset_min, dataset_max):
-        self.min = dataset_min
-        self.max = dataset_max
+    def __init__(self, min, max):
+        self.min = min
+        self.max = max
 
     def __call__(self, ndarray):
         ndarray[ndarray > self.max] = self.max

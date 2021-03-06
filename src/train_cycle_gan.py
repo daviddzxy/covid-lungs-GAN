@@ -64,11 +64,8 @@ crop = None
 if args.crop != 0:
     crop = Crop([args.crop, args.crop])
 
-normalize = None
-with open(config.cyclegan_dataset_metadata, "rb") as handle:
-    metadata = pickle.load(handle)
-    normalize = Normalize(metadata["min"], metadata["max"])
 
+normalize = Normalize(config.cyclegan_parameters["min"], config.cgan_parameters["max"])
 mask = ApplyMask(config.mask_values["non_lung_tissue"])
 
 dataset = CycleGanDataset(images_A=config.cyclegan_data_train["A"],

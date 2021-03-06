@@ -50,10 +50,6 @@ def log_images(image_batches, path, run_id, step, context, figsize):
 def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, figsize):
     step = str(step)
     curr_dir = os.path.join(path, run_id)
-    print(np.amax(image_batches_A))
-    print(np.amin(image_batches_A))
-    print(np.amax(image_batches_B))
-    print(np.amin(image_batches_B))
     if not os.path.isdir(curr_dir):
         os.mkdir(curr_dir)
     if not os.path.isdir(os.path.join(curr_dir, context)):

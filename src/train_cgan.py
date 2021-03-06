@@ -57,11 +57,8 @@ crop = None
 if args.crop != 0:
     crop = Crop([args.crop, args.crop])
 
-normalize = None
-with open(config.cgan_dataset_metadata, "rb") as handle:
-    metadata = pickle.load(handle)
-    normalize = Normalize(metadata["min"], metadata["max"])
 
+normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max"])
 mask_lungs = ApplyMask(config.mask_values["non_lung_tissue"])
 mask_covid = ApplyMask(config.mask_values["covid_tissue"], 1)
 
@@ -183,9 +180,9 @@ for epoch in range(0, args.epochs):
                    context="valid",
                    figsize=(12, 4))
 
-        log_heatmap(scale(image.detach().cpu().numpy(), metadata["min"], metadata["max"],
+        log_heatmap(scale(image.detach().cpu().numpy(), config.cgan_parameters["min"], config.cgan_parameters["max"],
                           mask=valid_masked_image.detach().cpu().numpy()),
-                    scale(fake_image.detach().cpu().numpy(), metadata["min"], metadata["max"],
+                    scale(fake_image.detach().cpu().numpy(), config.cgan_parameters ["min"], config.cgan_parameters["max"],
                           mask=valid_masked_image.detach().cpu().numpy()),
                     path=config.image_logs,
                     run_id=start_time,
