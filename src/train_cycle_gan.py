@@ -12,6 +12,7 @@ from utils import weights_init, denormalize, create_figure, Buffer, log_images
 from transformations import RandomRotation, Crop, ApplyMask, Normalize
 import argparse
 import config
+import matplotlib.pyplot as plt
 from config import cyclegan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
@@ -122,11 +123,11 @@ epoch_start = 0
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
-total_batch_counter = 0
 
 buffer_A = Buffer(parameters["buffer_length"])
 buffer_B = Buffer(parameters["buffer_length"])
 
+total_batch_counter = 0
 for epoch in range(epoch_start, args.epochs):
     print("Current epoch {}.".format(epoch))
     for i, data in enumerate(dataloader):
@@ -192,23 +193,23 @@ for epoch in range(epoch_start, args.epochs):
         optimizer_D_B.step()
 
         # Logging
-        writer.add_scalar("Loss/Generator Error", errG, total_batch_counter)
-        writer.add_scalar("Loss/DiscriminatorA Error", errD_A, total_batch_counter)
-        writer.add_scalar("Loss/DiscriminatorB Error", errD_B, total_batch_counter)
+        writer.add_scalar("Train loss/Generator Error", errG, total_batch_counter)
+        writer.add_scalar("Train loss/DiscriminatorA Error", errD_A, total_batch_counter)
+        writer.add_scalar("Train loss/DiscriminatorB Error", errD_B, total_batch_counter)
         total_batch_counter += 1
 
     scheduler_G.step()
 
-    f = create_figure([denormalize(real_A[0, 0, :, :].detach().cpu()),
-                       denormalize(fake_image_B[0, 0, :, :].detach().cpu()),
-                       denormalize(recovered_image_A[0, 0, :, :].detach().cpu())],
+    f = create_figure([real_A[0, 0, :, :].detach().cpu(),
+                       fake_image_B[0, 0, :, :].detach().cpu(),
+                       recovered_image_A[0, 0, :, :].detach().cpu()],
                       figsize=(12, 4)
                       )
     writer.add_figure("Image outputs/A to B to A", f, epoch)
 
-    f = create_figure([denormalize(real_B[0, 0, :, :].detach().cpu()),
-                       denormalize(fake_image_A[0, 0, :, :].detach().cpu()),
-                       denormalize(recovered_image_B[0, 0, :, :].detach().cpu())],
+    f = create_figure([real_B[0, 0, :, :].detach().cpu(),
+                       fake_image_A[0, 0, :, :].detach().cpu(),
+                       recovered_image_B[0, 0, :, :].detach().cpu()],
                       figsize=(12, 4)
                       )
     writer.add_figure("Image outputs/B to A to B", f, epoch)
@@ -256,6 +257,7 @@ for epoch in range(epoch_start, args.epochs):
                    step=epoch,
                    context="valid_BAB",
                    figsize=(12, 4))
+        plt.clf()
 
 writer.flush()
 writer.close()

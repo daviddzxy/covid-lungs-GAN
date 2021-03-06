@@ -6,10 +6,11 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, denormalize, create_figure, log_images, log_heatmap
+from utils import weights_init, create_figure, log_images, log_heatmap, scale
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
+import matplotlib.pyplot as plt
 from config import cgan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
@@ -39,10 +40,12 @@ parser.add_argument("--save-model", default=parameters["save_model"], nargs="?",
                     help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
-parser.add_argument("--rotation", type=int, default=parameters["random_rotation"],
+parser.add_argument("--rotation", type=int, default=parameters["rotation"],
                     help="Set max degrees of random rotation.")
 parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
 args = parser.parse_args()
+
+writer.add_text("Parameters", text_string=str(args))
 
 rotation = None
 max_rotation = None
@@ -137,14 +140,23 @@ for epoch in range(0, args.epochs):
         loss_G.backward()
         optimizer_G.step()
 
-        writer.add_scalar("Loss cgan/Generator Error", loss_G, total_batch_counter)
-        writer.add_scalar("Loss cgan/Discriminator Error", loss_D, total_batch_counter)
+        writer.add_scalar("Train loss cgan/Generator Error", loss_G, total_batch_counter)
+        writer.add_scalar("Train loss cgan/Discriminator Error", loss_D, total_batch_counter)
+        writer.add_scalar("Train loss cgan/G Identity_loss", identity_loss, total_batch_counter)
+        writer.add_scalar("Train loss cgan/G Adversarial_loss", adversarial_loss, total_batch_counter)
+        writer.add_scalar("Train loss cgan/D fake_loss_D", fake_loss_D, total_batch_counter)
+        writer.add_scalar("Train loss cgan/D real_loss_D", real_loss_D, total_batch_counter)
         total_batch_counter += 1
 
+    print("G Identity_loss {}".format(identity_loss))
+    print("G Adversarial_loss {}".format(adversarial_loss))
+    print("D fake_loss_D {}".format(fake_loss_D))
+    print("D real_loss_D {}".format(real_loss_D))
 
-    f = create_figure([denormalize(masked_image[0, 0, :, :].detach().cpu()),
-                       denormalize(fake_image[0, 0, :, :].detach().cpu()),
-                       denormalize(image[0, 0, :, :].detach().cpu())], figsize=(12, 4))
+    writer.add_scalar("L1 diff/Train", identity_loss, epoch)
+    f = create_figure([masked_image[0, 0, :, :].detach().cpu(),
+                       fake_image[0, 0, :, :].detach().cpu(),
+                       image[0, 0, :, :].detach().cpu()], figsize=(12, 4))
 
     writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
 
@@ -157,10 +169,12 @@ for epoch in range(0, args.epochs):
 
     with torch.no_grad():
         data = next(iter(valid_dataloader))
-        image, masked_image = data
-        image, masked_image = image.float().to(device), masked_image.float().to(device)
+        valid_image, valid_masked_image = data
+        valid_image, valid_masked_image = valid_image.float().to(device), valid_masked_image.float().to(device)
         generator.eval()
-        fake_image = generator(masked_image)
+        valid_fake_image = generator(valid_masked_image)
+        l1_diff = l1(valid_image, valid_fake_image)
+        writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
         log_images([masked_image, fake_image, image],
                    path=config.image_logs,
@@ -169,12 +183,16 @@ for epoch in range(0, args.epochs):
                    context="valid",
                    figsize=(12, 4))
 
-        log_heatmap(image, fake_image,
+        log_heatmap(scale(image.detach().cpu().numpy(), metadata["min"], metadata["max"],
+                          mask=valid_masked_image.detach().cpu().numpy()),
+                    scale(fake_image.detach().cpu().numpy(), metadata["min"], metadata["max"],
+                          mask=valid_masked_image.detach().cpu().numpy()),
                     path=config.image_logs,
                     run_id=start_time,
                     step=epoch,
                     context="heat",
                     figsize=(14, 5))
+    plt.clf()
 
 
 writer.flush()

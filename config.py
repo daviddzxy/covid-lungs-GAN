@@ -83,6 +83,6 @@ cgan_parameters = {
     "depth_discriminator": 2,
     "gpu": True,
     "save_model": True,
-    "random_rotation": 8,
+    "rotation": 8,
     "crop": 256
 }

@@ -50,6 +50,10 @@ def log_images(image_batches, path, run_id, step, context, figsize):
 def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, figsize):
     step = str(step)
     curr_dir = os.path.join(path, run_id)
+    print(np.amax(image_batches_A))
+    print(np.amin(image_batches_A))
+    print(np.amax(image_batches_B))
+    print(np.amin(image_batches_B))
     if not os.path.isdir(curr_dir):
         os.mkdir(curr_dir)
     if not os.path.isdir(os.path.join(curr_dir, context)):
@@ -57,13 +61,8 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
     if not os.path.isdir(os.path.join(curr_dir, context, step)):
         os.mkdir(os.path.join(curr_dir, context, step))
 
-    image_list_A = []
-    image_list_B = []
-    for image_A, image_B in zip(image_batches_A, image_batches_B):
-        image_list_A.append(denormalize(image_A.detach().cpu()))
-        image_list_B.append(denormalize(image_B.detach().cpu()))
 
-    for i, (image_A, image_B) in enumerate(zip(image_list_A, image_list_B)):
+    for i, (image_A, image_B) in enumerate(zip(image_batches_A, image_batches_B)):
         f = plt.figure(figsize=figsize)
         f.add_subplot(1, 3, 1)
         plt.imshow(image_A[0, :, :], cmap=plt.cm. gray)
@@ -76,6 +75,10 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
         cax = f.add_axes([ax.get_position().x1 + 0.01, ax.get_position().y0, 0.02, ax.get_position().height])
         plt.colorbar(im, cax=cax)
         plt.savefig(os.path.join(curr_dir, context, step, str(i)), format="png")
+
+
+def scale(image, interval_a, interval_b, mask):
+    return ((interval_b - interval_a) * ((image - np.amin(a=image, where=mask!=0, initial=10000)) / (np.amax(a=image, where=mask!=0, initial=-10000) - np.amin(a=image, where=mask!=0, initial=10000)))) + interval_a
 
 
 class Buffer():
