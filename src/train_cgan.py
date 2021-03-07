@@ -1,5 +1,6 @@
 import torch
 import os
+import gc
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -74,7 +75,7 @@ valid_dataset = CganDataset(images=config.cgan_data_test, mask_covid=mask_covid,
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
-valid_dataloader = DataLoader(dataset, shuffle=False, num_workers=1, batch_size=args.batch_size, drop_last=True)
+valid_dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
 
@@ -189,8 +190,10 @@ for epoch in range(0, args.epochs):
                     step=epoch,
                     context="heat",
                     figsize=(14, 5))
-    plt.close()
-
+    plt.close("all")
+    plt.clf()
+    plt.cla()
+    gc.collect()
 
 writer.flush()
 writer.close()
