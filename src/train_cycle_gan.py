@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from config import cyclegan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
-writer = SummaryWriter(log_dir=config.tensorboard_logs + start_time)
+writer = SummaryWriter(log_dir=os.path.join(config.tensorboard_logs, start_time))
 parser = argparse.ArgumentParser("Training script.")
 parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
@@ -253,7 +253,7 @@ for epoch in range(epoch_start, args.epochs):
                    step=epoch,
                    context="valid_BAB",
                    figsize=(12, 4))
-        plt.clf()
+        plt.close()
 
 writer.flush()
 writer.close()

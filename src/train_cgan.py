@@ -1,4 +1,5 @@
 import torch
+import os
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -13,7 +14,7 @@ import matplotlib.pyplot as plt
 from config import cgan_parameters as parameters
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
-writer = SummaryWriter(log_dir=config.tensorboard_logs + start_time)
+writer = SummaryWriter(log_dir=os.path.join(config.tensorboard_logs, start_time))
 parser = argparse.ArgumentParser("Training script.")
 parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
@@ -188,7 +189,7 @@ for epoch in range(0, args.epochs):
                     step=epoch,
                     context="heat",
                     figsize=(14, 5))
-    plt.clf()
+    plt.close()
 
 
 writer.flush()
