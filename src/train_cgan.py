@@ -174,7 +174,7 @@ for epoch in range(0, args.epochs):
         l1_diff = l1(valid_image, valid_fake_image)
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
-        log_images([masked_image, fake_image, image],
+        log_images([valid_masked_image, valid_fake_image, valid_image],
                    path=config.image_logs,
                    run_id=start_time,
                    step=epoch,
