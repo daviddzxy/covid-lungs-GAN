@@ -85,5 +85,6 @@ cgan_parameters = {
     "gpu": True,
     "save_model": True,
     "rotation": 8,
-    "crop": 256
+    "crop": 256,
+    "mask_covid": 2
 }

@@ -43,6 +43,8 @@ parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
 parser.add_argument("--rotation", type=int, default=parameters["rotation"],
                     help="Set max degrees of random rotation.")
+parser.add_argument("--mask-covid", type=int, default=parameters["mask_covid"],
+                    help="Value of mask covering damaged tissue.")
 parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
 args = parser.parse_args()
 
@@ -61,7 +63,7 @@ if args.crop != 0:
 
 normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max"])
 mask_lungs = ApplyMask(config.mask_values["non_lung_tissue"])
-mask_covid = ApplyMask(config.mask_values["covid_tissue"], 1)
+mask_covid = ApplyMask(config.mask_values["covid_tissue"], args.mask_covid)
 
 dataset = CganDataset(images=config.cgan_data_train,
                       mask_covid=mask_covid,
@@ -146,33 +148,33 @@ for epoch in range(0, args.epochs):
         writer.add_scalar("Train loss cgan/D real_loss_D", real_loss_D, total_batch_counter)
         total_batch_counter += 1
 
-    masked_image = masked_image.detach().cpu().numpy()
-    fake_image = fake_image.detach().cpu().numpy()
-    image = image.detach().cpu().numpy()
-    l1_diff = l1(torch.from_numpy(scale(image,
-                                        config.cgan_parameters["min"],
-                                        config.cgan_parameters["max"],
-                                        mask=masked_image)),
-                 torch.from_numpy(scale(fake_image,
-                                        config.cgan_parameters["min"],
-                                        config.cgan_parameters["max"],
-                                        mask=masked_image)))
-    writer.add_scalar("L1 diff/Train", l1_diff, epoch)
-
-    f = create_figure([masked_image[0, 0, :, :],
-                       fake_image[0, 0, :, :],
-                       image[0, 0, :, :]], figsize=(12, 4))
-
-    writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
-
-    log_images([masked_image, fake_image, image],
-               path=config.image_logs,
-               run_id=start_time,
-               step=epoch,
-               context="train",
-               figsize=(12, 4))
-
     with torch.no_grad():
+        masked_image = masked_image.cpu().numpy()
+        fake_image = fake_image.cpu().numpy()
+        image = image.cpu().numpy()
+        l1_diff = l1(torch.from_numpy(scale(image,
+                                            config.cgan_parameters["min"],
+                                            config.cgan_parameters["max"],
+                                            mask=masked_image)),
+                     torch.from_numpy(scale(fake_image,
+                                            config.cgan_parameters["min"],
+                                            config.cgan_parameters["max"],
+                                            mask=masked_image)))
+        writer.add_scalar("L1 diff/Train", l1_diff, epoch)
+
+        f = create_figure([masked_image[0, 0, :, :],
+                           fake_image[0, 0, :, :],
+                           image[0, 0, :, :]], figsize=(12, 4))
+
+        writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
+
+        log_images([masked_image, fake_image, image],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="train",
+                   figsize=(12, 4))
+
         data = next(iter(valid_dataloader))
         valid_image, valid_masked_image = data
         valid_image, valid_masked_image = valid_image.float().to(device), valid_masked_image.float().to(device)
