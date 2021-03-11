@@ -13,10 +13,6 @@ def weights_init(m):
         torch.nn.init.zeros_(m.bias)
 
 
-def denormalize(image):
-    return ((image + 1) / 2) * 255
-
-
 def create_figure(data, figsize):
     f = plt.figure(figsize=figsize)
     fig_len = len(data)
@@ -39,7 +35,7 @@ def log_images(image_batches, path, run_id, step, context, figsize):
 
     image_list = []
     for images in image_batches:
-        image_list.append(denormalize(images.detach().cpu()))
+        image_list.append(images)
 
     for i in range(image_batches[0].shape[0]):
         for channel in range(image_batches[0].shape[1]):
@@ -57,7 +53,6 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
     if not os.path.isdir(os.path.join(curr_dir, context, step)):
         os.mkdir(os.path.join(curr_dir, context, step))
 
-
     for i, (image_A, image_B) in enumerate(zip(image_batches_A, image_batches_B)):
         f = plt.figure(figsize=figsize)
         f.add_subplot(1, 3, 1)
@@ -67,7 +62,7 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
         ax = f.add_subplot(1, 3, 3)
         abs_img = np.abs(image_A - image_B)
         abs_img = abs_img[0, :, :]
-        im = plt.imshow(abs_img, cmap='gist_heat')
+        im = plt.imshow(abs_img, cmap='bwr')
         cax = f.add_axes([ax.get_position().x1 + 0.01, ax.get_position().y0, 0.02, ax.get_position().height])
         plt.colorbar(im, cax=cax)
         plt.savefig(os.path.join(curr_dir, context, step, str(i)), format="png")

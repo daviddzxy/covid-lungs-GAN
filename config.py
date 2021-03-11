@@ -49,7 +49,7 @@ mask_values = {
 #  training parameters
 cyclegan_parameters = {
     "min": -1000,
-    "max": 300,
+    "max": 100,
     "epochs": 500,
     "batch_size": 1,
     "generators": "Unet",
@@ -72,7 +72,7 @@ cyclegan_parameters = {
 
 cgan_parameters = {
     "min": -1000,
-    "max": 300,
+    "max": 100,
     "epochs": 500,
     "batch_size": 1,
     "generator": "Unet",

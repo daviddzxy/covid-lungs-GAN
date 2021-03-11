@@ -129,7 +129,7 @@ for epoch in range(0, args.epochs):
         optimizer_D.step()
 
         optimizer_G.zero_grad()
-        ake_input_D = torch.cat([fake_image, masked_image], 1)
+        fake_input_D = torch.cat([fake_image, masked_image], 1)
         pred_fake = discriminator(fake_input_D)
         adversarial_loss = l2(pred_fake, real_label)
         identity_loss = l1(fake_image, image)
@@ -146,15 +146,22 @@ for epoch in range(0, args.epochs):
         writer.add_scalar("Train loss cgan/D real_loss_D", real_loss_D, total_batch_counter)
         total_batch_counter += 1
 
-    print("G Identity_loss {}".format(identity_loss))
-    print("G Adversarial_loss {}".format(adversarial_loss))
-    print("D fake_loss_D {}".format(fake_loss_D))
-    print("D real_loss_D {}".format(real_loss_D))
+    masked_image = masked_image.detach().cpu().numpy()
+    fake_image = fake_image.detach().cpu().numpy()
+    image = image.detach().cpu().numpy()
+    l1_diff = l1(torch.from_numpy(scale(image,
+                                        config.cgan_parameters["min"],
+                                        config.cgan_parameters["max"],
+                                        mask=masked_image)),
+                 torch.from_numpy(scale(fake_image,
+                                        config.cgan_parameters["min"],
+                                        config.cgan_parameters["max"],
+                                        mask=masked_image)))
+    writer.add_scalar("L1 diff/Train", l1_diff, epoch)
 
-    writer.add_scalar("L1 diff/Train", identity_loss, epoch)
-    f = create_figure([masked_image[0, 0, :, :].detach().cpu(),
-                       fake_image[0, 0, :, :].detach().cpu(),
-                       image[0, 0, :, :].detach().cpu()], figsize=(12, 4))
+    f = create_figure([masked_image[0, 0, :, :],
+                       fake_image[0, 0, :, :],
+                       image[0, 0, :, :]], figsize=(12, 4))
 
     writer.add_figure("Image outputs/Real image, fake image, mask", f, epoch)
 
@@ -171,7 +178,18 @@ for epoch in range(0, args.epochs):
         valid_image, valid_masked_image = valid_image.float().to(device), valid_masked_image.float().to(device)
         generator.eval()
         valid_fake_image = generator(valid_masked_image)
-        l1_diff = l1(valid_image, valid_fake_image)
+        valid_image = valid_image.float().detach().cpu().numpy()
+        valid_masked_image = valid_masked_image.float().detach().cpu().numpy()
+        valid_fake_image = valid_fake_image.detach().cpu().numpy()
+        l1_diff = l1(torch.from_numpy(scale(valid_image,
+                           config.cgan_parameters["min"],
+                           config.cgan_parameters["max"],
+                           mask=valid_masked_image)),
+                     torch.from_numpy(scale(valid_fake_image,
+                           config.cgan_parameters["min"],
+                           config.cgan_parameters["max"],
+                           mask=valid_masked_image)))
+
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
         log_images([valid_masked_image, valid_fake_image, valid_image],
@@ -181,10 +199,10 @@ for epoch in range(0, args.epochs):
                    context="valid",
                    figsize=(12, 4))
 
-        log_heatmap(scale(image.detach().cpu().numpy(), config.cgan_parameters["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image.detach().cpu().numpy()),
-                    scale(fake_image.detach().cpu().numpy(), config.cgan_parameters ["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image.detach().cpu().numpy()),
+        log_heatmap(scale(valid_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
+                          mask=valid_masked_image),
+                    scale(valid_fake_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
+                          mask=valid_masked_image),
                     path=config.image_logs,
                     run_id=start_time,
                     step=epoch,
