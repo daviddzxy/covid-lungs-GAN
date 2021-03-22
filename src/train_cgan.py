@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CganDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, create_figure, log_images, log_heatmap, scale
+from utils import weights_init, create_figure, log_images, log_heatmap, scale, mae
 from transformations import Rotation, Crop, ApplyMask, Normalize
 import config
 import argparse
@@ -59,7 +59,6 @@ if args.rotation != 0:
 crop = None
 if args.crop != 0:
     crop = Crop([args.crop, args.crop])
-
 
 normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max"])
 mask_lungs = ApplyMask(config.mask_values["non_lung_tissue"])
@@ -152,14 +151,18 @@ for epoch in range(0, args.epochs):
         masked_image = masked_image.cpu().numpy()
         fake_image = fake_image.cpu().numpy()
         image = image.cpu().numpy()
-        l1_diff = l1(torch.from_numpy(scale(image,
-                                            config.cgan_parameters["min"],
-                                            config.cgan_parameters["max"],
-                                            mask=masked_image)),
-                     torch.from_numpy(scale(fake_image,
-                                            config.cgan_parameters["min"],
-                                            config.cgan_parameters["max"],
-                                            mask=masked_image)))
+        l1_diff = mae(scale(image,
+                            config.cgan_parameters["min"],
+                            config.cgan_parameters["max"],
+                            mask=masked_image,
+                            mask_val=config.mask_values["non_lung_tissue"]),
+                      scale(fake_image,
+                            config.cgan_parameters["min"],
+                            config.cgan_parameters["max"],
+                            mask=masked_image,
+                            mask_val=config.mask_values["non_lung_tissue"]),
+                      mask=masked_image,
+                      mask_val=config.mask_values["non_lung_tissue"])
         writer.add_scalar("L1 diff/Train", l1_diff, epoch)
 
         f = create_figure([masked_image[0, 0, :, :],
@@ -183,14 +186,20 @@ for epoch in range(0, args.epochs):
         valid_image = valid_image.float().detach().cpu().numpy()
         valid_masked_image = valid_masked_image.float().detach().cpu().numpy()
         valid_fake_image = valid_fake_image.detach().cpu().numpy()
-        l1_diff = l1(torch.from_numpy(scale(valid_image,
-                           config.cgan_parameters["min"],
-                           config.cgan_parameters["max"],
-                           mask=valid_masked_image)),
-                     torch.from_numpy(scale(valid_fake_image,
-                           config.cgan_parameters["min"],
-                           config.cgan_parameters["max"],
-                           mask=valid_masked_image)))
+        l1_diff = mae(
+            scale(valid_image,
+                  config.cgan_parameters["min"],
+                  config.cgan_parameters["max"],
+                  mask=valid_masked_image,
+                  mask_val=config.mask_values["non_lung_tissue"]),
+            scale(valid_fake_image,
+                  config.cgan_parameters["min"],
+                  config.cgan_parameters["max"],
+                  mask=valid_masked_image,
+                  mask_val=config.mask_values["non_lung_tissue"]
+                  ),
+            mask=valid_masked_image,
+            mask_val=config.mask_values["non_lung_tissue"])
 
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
@@ -202,9 +211,9 @@ for epoch in range(0, args.epochs):
                    figsize=(12, 4))
 
         log_heatmap(scale(valid_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image),
+                          mask=valid_masked_image, mask_val=config.mask_values["non_lung_tissue"]),
                     scale(valid_fake_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image),
+                          mask=valid_masked_image, mask_val=config.mask_values["non_lung_tissue"]),
                     path=config.image_logs,
                     run_id=start_time,
                     step=epoch,
