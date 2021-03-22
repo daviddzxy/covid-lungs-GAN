@@ -5,7 +5,7 @@ import gc
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from datasets import CycleGanDataset
+from datasets import CoivdLungHealthyLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, create_figure, Buffer, log_images
@@ -64,21 +64,20 @@ crop = None
 if args.crop != 0:
     crop = Crop([args.crop, args.crop])
 
-
 normalize = Normalize(config.cyclegan_parameters["min"], config.cgan_parameters["max"])
 mask = ApplyMask(config.mask_values["non_lung_tissue"])
 
-dataset = CycleGanDataset(images_A=config.cyclegan_data_train["A"],
-                          images_B=config.cyclegan_data_train["B"],
-                          mask=mask,
-                          rotation=rotation,
-                          crop=crop,
-                          normalize=normalize
-                          )
-valid_dataset = CycleGanDataset(images_A=config.cyclegan_data_test["A"],
-                                images_B=config.cyclegan_data_test["B"],
-                                mask=mask,
-                                normalize=normalize)
+dataset = CoivdLungHealthyLungDataset(images_A=config.cyclegan_data_train["A"],
+                                      images_B=config.cyclegan_data_train["B"],
+                                      mask=mask,
+                                      rotation=rotation,
+                                      crop=crop,
+                                      normalize=normalize
+                                      )
+valid_dataset = CoivdLungHealthyLungDataset(images_A=config.cyclegan_data_test["A"],
+                                            images_B=config.cyclegan_data_test["B"],
+                                            mask=mask,
+                                            normalize=normalize)
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
@@ -196,36 +195,35 @@ for epoch in range(epoch_start, args.epochs):
         total_batch_counter += 1
 
     scheduler_G.step()
-
-    f = create_figure([real_A[0, 0, :, :].detach().cpu(),
-                       fake_image_B[0, 0, :, :].detach().cpu(),
-                       recovered_image_A[0, 0, :, :].detach().cpu()],
-                      figsize=(12, 4)
-                      )
-    writer.add_figure("Image outputs/A to B to A", f, epoch)
-
-    f = create_figure([real_B[0, 0, :, :].detach().cpu(),
-                       fake_image_A[0, 0, :, :].detach().cpu(),
-                       recovered_image_B[0, 0, :, :].detach().cpu()],
-                      figsize=(12, 4)
-                      )
-    writer.add_figure("Image outputs/B to A to B", f, epoch)
-
-    log_images([real_A, fake_image_B, recovered_image_A],
-               path=config.image_logs,
-               run_id=start_time,
-               step=epoch,
-               context="train_ABA",
-               figsize=(12, 4))
-
-    log_images([real_B, fake_image_A, recovered_image_B],
-               path=config.image_logs,
-               run_id=start_time,
-               step=epoch,
-               context="train_BAB",
-               figsize=(12, 4))
-
     with torch.no_grad():
+        f = create_figure([real_A[0, 0, :, :].detach().cpu(),
+                           fake_image_B[0, 0, :, :].detach().cpu(),
+                           recovered_image_A[0, 0, :, :].detach().cpu()],
+                          figsize=(12, 4)
+                          )
+        writer.add_figure("Image outputs/A to B to A", f, epoch)
+
+        f = create_figure([real_B[0, 0, :, :].detach().cpu(),
+                           fake_image_A[0, 0, :, :].detach().cpu(),
+                           recovered_image_B[0, 0, :, :].detach().cpu()],
+                          figsize=(12, 4)
+                          )
+        writer.add_figure("Image outputs/B to A to B", f, epoch)
+
+        log_images([real_A, fake_image_B, recovered_image_A],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="train_ABA",
+                   figsize=(12, 4))
+
+        log_images([real_B, fake_image_A, recovered_image_B],
+                   path=config.image_logs,
+                   run_id=start_time,
+                   step=epoch,
+                   context="train_BAB",
+                   figsize=(12, 4))
+
         data = next(iter(valid_dataloader))
         real_A, real_B = data
         real_A, real_B = real_A.float().to(device), real_B.float().to(device)

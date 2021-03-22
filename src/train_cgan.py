@@ -4,7 +4,7 @@ import gc
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from datasets import CganDataset
+from datasets import CoivdLungMaskLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, create_figure, log_images, log_heatmap, scale, mae
@@ -64,15 +64,15 @@ normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max
 mask_lungs = ApplyMask(config.mask_values["non_lung_tissue"])
 mask_covid = ApplyMask(config.mask_values["covid_tissue"], args.mask_covid)
 
-dataset = CganDataset(images=config.cgan_data_train,
-                      mask_covid=mask_covid,
-                      mask_lungs=mask_lungs,
-                      max_rotation=max_rotation,
-                      rotation=rotation,
-                      crop=crop,
-                      normalize=normalize)
+dataset = CoivdLungMaskLungDataset(images=config.cgan_data_train,
+                                   mask_covid=mask_covid,
+                                   mask_lungs=mask_lungs,
+                                   max_rotation=max_rotation,
+                                   rotation=rotation,
+                                   crop=crop,
+                                   normalize=normalize)
 
-valid_dataset = CganDataset(images=config.cgan_data_test, mask_covid=mask_covid, normalize=normalize)
+valid_dataset = CoivdLungMaskLungDataset(images=config.cgan_data_test, mask_covid=mask_covid, normalize=normalize)
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 

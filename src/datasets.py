@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from transformations import ToTensor
 
 
-class CycleGanDataset(Dataset):
+class CoivdLungHealthyLungDataset(Dataset):
     def __init__(self, images_A, images_B, mask=None, rotation=None, crop=None, normalize=None):
         self.dir_A = images_A
         self.dir_B = images_B
@@ -47,7 +47,7 @@ class CycleGanDataset(Dataset):
         return max(len(self.files_A), len(self.files_B))
 
 
-class CganDataset(Dataset):
+class CoivdLungMaskLungDataset(Dataset):
     def __init__(self, images, mask_covid, mask_lungs=None, max_rotation=None, rotation=None, crop=None,
                  normalize=None):
         self.dir = images
