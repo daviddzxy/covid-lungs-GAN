@@ -57,7 +57,7 @@ class UnetGenerator2D(nn.Module):
 
 
 class ResNetGenerator2D(nn.Module):
-    def __init__(self, resnet_depth, filters):
+    def __init__(self, resnet_depth, scale_depth, filters):
         super().__init__()
         if resnet_depth < 1:
             raise ValueError
@@ -65,54 +65,45 @@ class ResNetGenerator2D(nn.Module):
         if filters < 1:
             raise ValueError
 
+        if scale_depth < 1:
+            raise ValueError
+
         layers = []
-        in_channels = 1
-        out_channels = 2 * in_channels
-
+        mult = 1
         #  downsampling path
-        layers += [
-            nn.Conv2d(in_channels=1, out_channels=out_channels, kernel_size=7, stride=1,
-                      padding=3,
-                      padding_mode="reflect"),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-            ]
-        in_channels = out_channels
-        out_channels = 2 * out_channels
-
-        for i in range(0, 2):
+        for i in range(0, scale_depth):
             layers += [
-                nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=2,
+                nn.Conv2d(in_channels=mult, out_channels=mult*2, kernel_size=4, stride=2,
                           padding=1,
                           padding_mode="reflect"),
-                nn.BatchNorm2d(out_channels),
+                nn.BatchNorm2d(mult*2),
                 nn.ReLU(inplace=True)
             ]
-            in_channels = out_channels
-            out_channels = out_channels * 2
+            mult = mult*2
 
         #  residual path
         for i in range(0, resnet_depth):
-            layers += [ResidualBlock(in_channels=in_channels, kernel_size=3)]
+            layers += [ResidualBlock(in_channels=mult, kernel_size=3)]
 
         #  upsampling path
-        out_channels = in_channels // 2
-        for i in range(0, 2):
+        for i in range(0, scale_depth-1):
             layers += [
-                nn.ConvTranspose2d(in_channels=in_channels,
-                                   out_channels=out_channels,
-                                   kernel_size=3,
+                nn.ConvTranspose2d(in_channels=mult,
+                                   out_channels=mult // 2,
+                                   kernel_size=4,
                                    stride=2,
-                                   padding=1,
-                                   output_padding=1),
-                nn.BatchNorm2d(out_channels),
+                                   padding=1),
+                nn.BatchNorm2d(mult // 2),
                 nn.ReLU(inplace=True)
             ]
-            in_channels = out_channels
-            out_channels = out_channels // 2
+            mult = mult // 2
 
         layers += [
-            nn.ConvTranspose2d(in_channels=in_channels, out_channels=1, kernel_size=7, padding=3),
+            nn.ConvTranspose2d(in_channels=mult,
+                               out_channels=1,
+                               kernel_size=4,
+                               stride=2,
+                               padding=1),
             nn.Tanh()
         ]
 

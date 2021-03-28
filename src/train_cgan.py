@@ -46,6 +46,11 @@ parser.add_argument("--rotation", type=int, default=parameters["rotation"],
 parser.add_argument("--mask-covid", type=int, default=parameters["mask_covid"],
                     help="Value of mask covering damaged tissue.")
 parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
+parser.add_argument("--resnet-resnet-depth", type=int, default=parameters["resnet_resnet_depth"],
+                    help="Set length of resnet path.")
+parser.add_argument("--resnet-scale-depth", type=int, default=parameters["resnet_scale_depth"],
+                    help="Set length of image crop.")
+
 args = parser.parse_args()
 
 writer.add_text("Parameters", text_string=str(args))
@@ -85,7 +90,8 @@ if args.generator == "Unet":
     generator = UnetGenerator2D(depth=args.depth_generator,
                                 filters=args.filters_generator).to(device).apply(weights_init)
 elif args.generator == "Resnet":
-    generator = ResNetGenerator2D(resnet_depth=args.depth_generator,
+    generator = ResNetGenerator2D(resnet_depth=args.resnet_resnet_depth,
+                                  scale_depth=args.resnet_scale_depth,
                                   filters=args.filters_generator).to(device).apply(weights_init)
 
 discriminator = PatchGanDiscriminator(filters=args.filters_discriminator,

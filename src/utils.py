@@ -56,9 +56,9 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
     for i, (image_A, image_B) in enumerate(zip(image_batches_A, image_batches_B)):
         f = plt.figure(figsize=figsize)
         f.add_subplot(1, 3, 1)
-        plt.imshow(image_A[0, :, :], cmap=plt.cm. gray)
+        plt.imshow(image_A[0, :, :], cmap=plt.cm.gray)
         f.add_subplot(1, 3, 2)
-        plt.imshow(image_B[0, :, :], cmap=plt.cm. gray)
+        plt.imshow(image_B[0, :, :], cmap=plt.cm.gray)
         ax = f.add_subplot(1, 3, 3)
         abs_img = np.abs(image_A - image_B)
         abs_img = abs_img[0, :, :]
