@@ -33,7 +33,7 @@ class UnetGenerator2D(nn.Module):
             self.up_layers += [DoubleConv(in_channels=in_channels * 2, out_channels=out_channels, kernel_size=3,
                                           stride=1,
                                           padding=1)]
-            in_channels = in_channels // 2
+            in_channels = out_channels
             out_channels = out_channels // 2
 
         self.outermost = DoubleConv(in_channels=in_channels * 2, out_channels=1, kernel_size=3, stride=1, padding=1,
@@ -69,37 +69,41 @@ class ResNetGenerator2D(nn.Module):
             raise ValueError
 
         layers = []
-        mult = 1
+        in_channels = 1
+        out_channles = filters
         #  downsampling path
         for i in range(0, scale_depth):
             layers += [
-                nn.Conv2d(in_channels=mult, out_channels=mult*2, kernel_size=4, stride=2,
+                nn.Conv2d(in_channels=in_channels, out_channels=out_channles, kernel_size=4, stride=2,
                           padding=1,
                           padding_mode="reflect"),
-                nn.BatchNorm2d(mult*2),
+                nn.BatchNorm2d(out_channles),
                 nn.ReLU(inplace=True)
             ]
-            mult = mult*2
+            in_channels = out_channles
+            out_channles = 2 * out_channles
 
         #  residual path
         for i in range(0, resnet_depth):
-            layers += [ResidualBlock(in_channels=mult, kernel_size=3)]
+            layers += [ResidualBlock(in_channels=in_channels, kernel_size=3)]
 
+        out_channles = in_channels // 2
         #  upsampling path
         for i in range(0, scale_depth-1):
             layers += [
-                nn.ConvTranspose2d(in_channels=mult,
-                                   out_channels=mult // 2,
+                nn.ConvTranspose2d(in_channels=in_channels,
+                                   out_channels=out_channles,
                                    kernel_size=4,
                                    stride=2,
                                    padding=1),
-                nn.BatchNorm2d(mult // 2),
+                nn.BatchNorm2d(out_channles),
                 nn.ReLU(inplace=True)
             ]
-            mult = mult // 2
+            in_channels = out_channles
+            out_channles = out_channles // 2
 
         layers += [
-            nn.ConvTranspose2d(in_channels=mult,
+            nn.ConvTranspose2d(in_channels=in_channels,
                                out_channels=1,
                                kernel_size=4,
                                stride=2,
