@@ -112,5 +112,7 @@ cgan_parameters = {
     "crop": 256,
     "mask_covid": 2,
     "resnet_scale_depth": 2,
-    "resnet_resnet_depth": 5
+    "resnet_resnet_depth": 5,
+    "generator_learning_decay": [1, 1],
+    "discriminator_learning_decay": [1, 1]
 }

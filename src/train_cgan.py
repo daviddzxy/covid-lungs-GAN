@@ -50,6 +50,12 @@ parser.add_argument("--resnet-resnet-depth", type=int, default=parameters["resne
                     help="Set length of resnet path.")
 parser.add_argument("--resnet-scale-depth", type=int, default=parameters["resnet_scale_depth"],
                     help="Set length of image crop.")
+parser.add_argument("--generator-learning-rate-decay", type=int, default=parameters["generator_learning_decay"], nargs=2,
+                    help="Set learning rate decay of generator. First argument is value of learning rate,"
+                         " second argument determines period of learning rate deacy.")
+parser.add_argument("--discriminator-learning-rate-decay", type=int, default=parameters["discriminator_learning_decay"],
+                    nargs=2, help="Set learning rate decay of discriminator. First argument is value of learning rate,"
+                                  " second argument determines period of learning rate deacy.")
 
 args = parser.parse_args()
 
@@ -106,6 +112,14 @@ optimizer_D = torch.optim.Adam(discriminator.parameters(),
                                lr=args.learning_rate_discriminator,
                                betas=(0.5, 0.999))
 
+scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
+                                              gamma=args.generator_learning_rate_decay[0],
+                                              step_size=args.generator_learning_rate_decay[1])
+
+scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer_G,
+                                              gamma=args.discriminator_learning_rate_decay[0],
+                                              step_size=args.discriminator_learning_rate_decay[1])
+
 l1 = torch.nn.L1Loss().to(device)
 l2 = torch.nn.MSELoss().to(device)
 
@@ -153,6 +167,10 @@ for epoch in range(0, args.epochs):
         writer.add_scalar("Train loss cgan/D real_loss_D", real_loss_D, total_batch_counter)
         total_batch_counter += 1
 
+    scheduler_G.step()
+    scheduler_D.step()
+    print(scheduler_D.get_lr())
+    print(scheduler_D.get_lr())
     with torch.no_grad():
         masked_image = masked_image.cpu().numpy()
         fake_image = fake_image.cpu().numpy()
