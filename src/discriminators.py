@@ -16,7 +16,7 @@ class PatchGanDiscriminator(nn.Module):
         in_channels = filters
         out_channels = in_channels * 2
         for i in range(depth-2):
-            layers += [Conv(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1, activ="leaky")]
+            layers += [Conv(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1, norm=False, activ="leaky")]
             in_channels = out_channels
             out_channels = out_channels * 2
 
