@@ -232,7 +232,7 @@ for epoch in range(0, args.epochs):
 
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
-        log_images([valid_masked_image, valid_fake_image, valid_image],
+        log_images([valid_masked_image, mask_lungs(valid_fake_image, valid_masked_image), valid_image],
                    path=config.image_logs,
                    run_id=start_time,
                    step=epoch,
