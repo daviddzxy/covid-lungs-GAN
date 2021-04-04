@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from transformations import ToTensor
 
 
-class CoivdLungHealthyLungDataset(Dataset):
+class CovidLungHealthyLungDataset(Dataset):
     def __init__(self, images_A, images_B, mask=None, rotation=None, crop=None, normalize=None):
         self.dir_A = images_A
         self.dir_B = images_B

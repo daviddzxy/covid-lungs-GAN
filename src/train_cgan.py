@@ -13,6 +13,7 @@ import config
 import argparse
 import matplotlib.pyplot as plt
 from config import cgan_parameters as parameters
+from torchsummary import summary
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
 writer = SummaryWriter(log_dir=os.path.join(config.tensorboard_logs, start_time))
@@ -56,7 +57,12 @@ parser.add_argument("--generator-learning-rate-decay", type=float, default=param
 parser.add_argument("--discriminator-learning-rate-decay", type=float, default=parameters["discriminator_learning_decay"],
                     nargs=2, help="Set learning rate decay of discriminator. First argument is value of learning rate,"
                                   " second argument determines period of learning rate deacy.")
-
+parser.add_argument("--generator-normalization", type=str, default=parameters["g_norm_layer"],
+                    nargs="?", choices=["batch_norm", "instance_norm", "none"],
+                    help="Set type of normalization layer in generator.")
+parser.add_argument("--discriminator-normalization", type=str, default=parameters["d_norm_layer"],
+                    nargs="?", choices=["batch_norm", "instance_norm", "none"],
+                    help="Set type of normalization layer in discriminator.")
 args = parser.parse_args()
 
 writer.add_text("Parameters", text_string=str(args))
@@ -94,14 +100,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "c
 generator = None
 if args.generator == "Unet":
     generator = UnetGenerator2D(depth=args.depth_generator,
-                                filters=args.filters_generator).to(device).apply(weights_init)
+                                filters=args.filters_generator,
+                                norm=args.generator_normalization).to(device).apply(weights_init)
 elif args.generator == "Resnet":
     generator = ResNetGenerator2D(resnet_depth=args.resnet_resnet_depth,
                                   scale_depth=args.resnet_scale_depth,
-                                  filters=args.filters_generator).to(device).apply(weights_init)
+                                  filters=args.filters_generator,
+                                  norm=args.generator_normalization).to(device).apply(weights_init)
 
 discriminator = PatchGanDiscriminator(filters=args.filters_discriminator,
                                       depth=args.depth_discriminator,
+                                      norm=args.discriminator_normalization,
                                       in_channels=2).to(device).apply(weights_init)
 
 optimizer_G = torch.optim.Adam(generator.parameters(),
@@ -122,7 +131,6 @@ scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer_G,
 
 l1 = torch.nn.L1Loss().to(device)
 l2 = torch.nn.MSELoss().to(device)
-
 total_batch_counter = 0
 for epoch in range(0, args.epochs):
     print("Current epoch {}.".format(epoch))
@@ -130,7 +138,6 @@ for epoch in range(0, args.epochs):
         image, masked_image = data
         image, masked_image = image.float().to(device), masked_image.float().to(device)
         fake_image = generator(masked_image)
-
         optimizer_D.zero_grad()
 
         fake_input_D = torch.cat([fake_image, masked_image], 1)

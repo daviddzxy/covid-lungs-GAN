@@ -111,8 +111,10 @@ cgan_parameters = {
     "rotation": 8,
     "crop": 256,
     "mask_covid": 2,
-    "resnet_scale_depth": 2,
+    "resnet_scale_depth": 1,
     "resnet_resnet_depth": 5,
     "generator_learning_decay": [1.0, 1],
-    "discriminator_learning_decay": [1.0, 1]
+    "discriminator_learning_decay": [1.0, 1],
+    "g_norm_layer": "batch_norm",
+    "d_norm_layer": "none"
 }

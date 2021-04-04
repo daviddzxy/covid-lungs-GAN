@@ -3,13 +3,20 @@ from network_parts import DoubleConv, ResidualBlock
 
 
 class UnetGenerator2D(nn.Module):
-    def __init__(self, depth, filters):
+    def __init__(self, depth, filters, norm):
         super().__init__()
         if filters < 1:
             raise ValueError
 
         if depth < 2:
             raise ValueError
+
+        if norm == "batch_norm":
+            norm = nn.BatchNorm2d
+        elif norm == "instance_norm":
+            norm = nn.InstanceNorm2d
+        elif norm == "none":
+            norm = None
 
         self.down_layers = nn.ModuleList()
         self.up_layers = nn.ModuleList()
@@ -20,24 +27,23 @@ class UnetGenerator2D(nn.Module):
         out_channels = filters
         for i in range(depth - 1):
             self.down_layers += [DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1,
-                                            padding=1)]
+                                            padding=1, norm=norm)]
             in_channels = out_channels
             out_channels = out_channels * 2
 
         out_channels = in_channels
         self.bottleneck = DoubleConv(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1,
-                                     padding=1)
+                                     padding=1, norm=norm)
         out_channels = out_channels // 2
 
         for i in range(depth - 2):
             self.up_layers += [DoubleConv(in_channels=in_channels * 2, out_channels=out_channels, kernel_size=3,
-                                          stride=1,
-                                          padding=1)]
+                                          stride=1, padding=1, norm=norm)]
             in_channels = out_channels
             out_channels = out_channels // 2
 
         self.outermost = DoubleConv(in_channels=in_channels * 2, out_channels=1, kernel_size=3, stride=1, padding=1,
-                                    outermost=True)
+                                    norm=norm, outermost=True)
 
     def forward(self, x):
         down_outputs = []
@@ -57,7 +63,7 @@ class UnetGenerator2D(nn.Module):
 
 
 class ResNetGenerator2D(nn.Module):
-    def __init__(self, resnet_depth, scale_depth, filters):
+    def __init__(self, resnet_depth, scale_depth, filters, norm):
         super().__init__()
         if resnet_depth < 1:
             raise ValueError
@@ -68,6 +74,13 @@ class ResNetGenerator2D(nn.Module):
         if scale_depth < 1:
             raise ValueError
 
+        if norm == "batch_norm":
+            norm = nn.BatchNorm2d
+        elif norm == "instance_norm":
+            norm = nn.InstanceNorm2d
+        elif norm == "none":
+            norm = None
+
         layers = []
         in_channels = 1
         out_channles = filters
@@ -77,15 +90,17 @@ class ResNetGenerator2D(nn.Module):
                 nn.Conv2d(in_channels=in_channels, out_channels=out_channles, kernel_size=4, stride=2,
                           padding=1,
                           padding_mode="reflect"),
-                nn.BatchNorm2d(out_channles),
-                nn.ReLU(inplace=True)
             ]
+            if norm is not None:
+                layers += [norm(out_channles)]
+            layers += [nn.ReLU(inplace=True)]
+
             in_channels = out_channles
             out_channles = 2 * out_channles
 
         #  residual path
         for i in range(0, resnet_depth):
-            layers += [ResidualBlock(in_channels=in_channels, kernel_size=3)]
+            layers += [ResidualBlock(in_channels=in_channels, kernel_size=3, norm=norm)]
 
         out_channles = in_channels // 2
         #  upsampling path
@@ -95,10 +110,11 @@ class ResNetGenerator2D(nn.Module):
                                    out_channels=out_channles,
                                    kernel_size=4,
                                    stride=2,
-                                   padding=1),
-                nn.BatchNorm2d(out_channles),
-                nn.ReLU(inplace=True)
-            ]
+                                   padding=1)]
+            if norm is not None:
+                layers += [norm(out_channles)]
+            layers += [nn.ReLU(inplace=True)]
+
             in_channels = out_channles
             out_channles = out_channles // 2
 
