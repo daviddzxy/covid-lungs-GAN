@@ -5,7 +5,7 @@ import gc
 from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from datasets import CoivdLungHealthyLungDataset
+from datasets import CovidLungHealthyLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, create_figure, Buffer, log_images
@@ -44,14 +44,26 @@ parser.add_argument("--identity-weight", default=parameters["identity_weight"], 
                     help="Set weight of identity loss function.")
 parser.add_argument("--cycle-weight", default=parameters["cycle_weight"], type=float,
                     help="Set weight of cycle loss function.")
-parser.add_argument("--save-model", default=parameters["save_model"], nargs="?",
-                    help="Turn on model saving.")
-parser.add_argument("--learning-rate-decay", type=float, default=parameters["learning_rate_decay"], nargs=2,
-                    help="Set learning rate decay of generators. First argument is value of decay factor,"
-                         " second value is period of learning rate decay")
 parser.add_argument("--random-rotation", type=int, default=parameters["random_rotation"],
                     help="Set max degrees of random rotation.")
 parser.add_argument("--crop", type=int, default=parameters["crop"], help="Set length of image crop.")
+parser.add_argument("--generators-normalization", type=str, default=parameters["g_norm_layer"],
+                    nargs="?", choices=["batch_norm", "instance_norm", "none"],
+                    help="Set type of normalization layer in generators.")
+parser.add_argument("--discriminators-normalization", type=str, default=parameters["d_norm_layer"],
+                    nargs="?", choices=["batch_norm", "instance_norm", "none"],
+                    help="Set type of normalization layer in discriminators.")
+parser.add_argument("--resnet-resnet-depth", type=int, default=parameters["resnet_resnet_depth"],
+                    help="Set length of resnet path.")
+parser.add_argument("--resnet-scale-depth", type=int, default=parameters["resnet_scale_depth"],
+                    help="Set length of image crop.")
+parser.add_argument("--generators-learning-rate-decay", type=float, default=parameters["generator_learning_decay"],
+                    nargs=2, help="Set learning rate decay of generator. First argument is value of learning rate,"
+                                  " second argument determines period of learning rate deacy.")
+parser.add_argument("--discriminators-learning-rate-decay", type=float,
+                    default=parameters["discriminator_learning_decay"],
+                    nargs=2, help="Set learning rate decay of discriminator. First argument is value of learning rate,"
+                                  " second argument determines period of learning rate deacy.")
 args = parser.parse_args()
 
 os.sys.path.append(config.project_root)
@@ -67,14 +79,14 @@ if args.crop != 0:
 normalize = Normalize(config.cyclegan_parameters["min"], config.cgan_parameters["max"])
 mask = ApplyMask(config.mask_values["non_lung_tissue"])
 
-dataset = CoivdLungHealthyLungDataset(images_A=config.cyclegan_data_train["A"],
+dataset = CovidLungHealthyLungDataset(images_A=config.cyclegan_data_train["A"],
                                       images_B=config.cyclegan_data_train["B"],
                                       mask=mask,
                                       rotation=rotation,
                                       crop=crop,
                                       normalize=normalize
                                       )
-valid_dataset = CoivdLungHealthyLungDataset(images_A=config.cyclegan_data_test["A"],
+valid_dataset = CovidLungHealthyLungDataset(images_A=config.cyclegan_data_test["A"],
                                             images_B=config.cyclegan_data_test["B"],
                                             mask=mask,
                                             normalize=normalize)
@@ -87,20 +99,28 @@ device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "c
 
 if args.generator == "Unet":
     netG_A2B = UnetGenerator2D(depth=args.depth_generators,
-                               filters=args.filters_generators).to(device).apply(weights_init)
+                               filters=args.filters_generators,
+                               norm=args.generators_normalization).to(device).apply(weights_init)
     netG_B2A = UnetGenerator2D(depth=args.depth_generators,
-                               filters=args.filters_generators).to(device).apply(weights_init)
+                               filters=args.filters_generators,
+                               norm=args.generators_normalization).to(device).apply(weights_init)
 elif args.generator == "Resnet":
     netG_A2B = ResNetGenerator2D(resnet_depth=args.depth_generators,
-                                 filters=args.filters_generators).to(device).apply(weights_init)
+                                 filters=args.filters_generators,
+                                 norm=args.generators_normalization,
+                                 scale_depth=args.scale_depth).to(device).apply(weights_init)
     netG_B2A = ResNetGenerator2D(resnet_depth=args.depth_generators,
-                                 filters=args.filters_generators).to(device).apply(weights_init)
+                                 norm=args.generators_normalization,
+                                 filters=args.filters_generators,
+                                 scale_depth=args.scale_depth).to(device).apply(weights_init)
 
 netD_A = PatchGanDiscriminator(filters=args.filters_discriminators,
-                               depth=args.depth_discriminators).to(device).apply(weights_init)
+                               depth=args.depth_discriminators,
+                               norm=args.discriminators_normalization).to(device).apply(weights_init)
 
 netD_B = PatchGanDiscriminator(filters=args.filters_discriminators,
-                               depth=args.depth_discriminators).to(device).apply(weights_init)
+                               depth=args.depth_discriminators,
+                               norm=args.discriminators_normalization).to(device).apply(weights_init)
 
 optimizer_G = torch.optim.Adam(
     itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()), lr=args.learning_rate_generators,
@@ -111,17 +131,20 @@ optimizer_D_B = torch.optim.Adam(
     netD_B.parameters(), lr=args.learning_rate_discriminator_b, betas=(0.5, 0.999))
 
 scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer_G,
-                                              gamma=args.learning_rate_decay[0],
-                                              step_size=args.learning_rate_decay[1])
+                                              gamma=args.generators_learning_rate_decay[0],
+                                              step_size=args.generators_learning_rate_decay[1])
+scheduler_D_A = torch.optim.lr_scheduler.StepLR(optimizer_D_A,
+                                              gamma=args.discriminators_learning_rate_decay[0],
+                                              step_size=args.discriminators_learning_rate_decay[1])
+scheduler_D_B = torch.optim.lr_scheduler.StepLR(optimizer_D_B,
+                                              gamma=args.discriminators_learning_rate_decay[0],
+                                              step_size=args.discriminators_learning_rate_decay[1])
 
 epoch_start = 0
 
 cycle_loss = torch.nn.L1Loss().to(device)
 identity_loss = torch.nn.L1Loss().to(device)
 adversarial_loss = torch.nn.MSELoss().to(device)
-
-buffer_A = Buffer(parameters["buffer_length"])
-buffer_B = Buffer(parameters["buffer_length"])
 
 total_batch_counter = 0
 for epoch in range(epoch_start, args.epochs):
@@ -170,9 +193,6 @@ for epoch in range(epoch_start, args.epochs):
         errD_real_A = adversarial_loss(real_output_A, real_label)
         errD_real_B = adversarial_loss(real_output_B, real_label)
 
-        fake_image_A = buffer_A.push_and_pop(fake_image_A)
-        fake_image_B = buffer_A.push_and_pop(fake_image_B)
-
         fake_output_A = netD_A(fake_image_A.detach())
         fake_output_B = netD_B(fake_image_B.detach())
 
@@ -195,17 +215,25 @@ for epoch in range(epoch_start, args.epochs):
         total_batch_counter += 1
 
     scheduler_G.step()
+    scheduler_D_A.step()
+    scheduler_D_B.step()
     with torch.no_grad():
-        f = create_figure([real_A[0, 0, :, :].detach().cpu(),
-                           fake_image_B[0, 0, :, :].detach().cpu(),
-                           recovered_image_A[0, 0, :, :].detach().cpu()],
+        real_A = real_A.cpu().numpy()
+        real_B = real_B.cpu().numpy()
+        fake_image_A = fake_image_A.cpu().numpy()
+        fake_image_B = fake_image_B.cpu().numpy()
+        recovered_image_A = recovered_image_A.cpu().numpy()
+        recovered_image_B = recovered_image_B.cpu().numpy()
+        f = create_figure([real_A[0, 0, :, :],
+                           fake_image_B[0, 0, :, :],
+                           recovered_image_A[0, 0, :, :]],
                           figsize=(12, 4)
                           )
         writer.add_figure("Image outputs/A to B to A", f, epoch)
 
-        f = create_figure([real_B[0, 0, :, :].detach().cpu(),
-                           fake_image_A[0, 0, :, :].detach().cpu(),
-                           recovered_image_B[0, 0, :, :].detach().cpu()],
+        f = create_figure([real_B[0, 0, :, :],
+                           fake_image_A[0, 0, :, :],
+                           recovered_image_B[0, 0, :, :]],
                           figsize=(12, 4)
                           )
         writer.add_figure("Image outputs/B to A to B", f, epoch)
@@ -238,7 +266,12 @@ for epoch in range(epoch_start, args.epochs):
 
         netG_B2A.train()
         netG_A2B.train()
-
+        real_A = real_A.cpu().numpy()
+        real_B = real_B.cpu().numpy()
+        fake_image_A = fake_image_A.cpu().numpy()
+        fake_image_B = fake_image_B.cpu().numpy()
+        recovered_image_A = recovered_image_A.cpu().numpy()
+        recovered_image_B = recovered_image_B.cpu().numpy()
         log_images([real_A, fake_image_B, recovered_image_A],
                    path=config.image_logs,
                    run_id=start_time,

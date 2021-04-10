@@ -61,13 +61,18 @@ cyclegan_parameters = {
     "filters_discriminators": 20,
     "depth_discriminators": 2,
     "gpu": True,
-    "save_model": True,
-    "learning_rate_decay": [0.95, 10],
+    "generator_learning_decay": [1.0, 1],
+    "discriminator_learning_decay": [1.0, 1],
     "random_rotation": 8,
     "crop": 256,
     "identity_weight": 5.0,
     "cycle_weight": 10.0,
     "buffer_length": 20,
+    "mask_covid": 1,
+    "resnet_scale_depth": 1,
+    "resnet_resnet_depth": 5,
+    "g_norm_layer": "batch_norm",
+    "d_norm_layer": "none"
 }
 
 cyclegan_parameters_covidlungmask = {
@@ -84,14 +89,18 @@ cyclegan_parameters_covidlungmask = {
     "filters_discriminators": 20,
     "depth_discriminators": 2,
     "gpu": True,
-    "save_model": True,
-    "learning_rate_decay": [0.95, 10],
+    "generator_learning_decay": [1.0, 1],
+    "discriminator_learning_decay": [1.0, 1],
     "rotation": 8,
     "crop": 256,
     "identity_weight": 5.0,
     "cycle_weight": 10.0,
     "buffer_length": 20,
-    "mask_covid": 2
+    "mask_covid": 1,
+    "resnet_scale_depth": 1,
+    "resnet_resnet_depth": 5,
+    "g_norm_layer": "batch_norm",
+    "d_norm_layer": "none"
 }
 
 cgan_parameters = {
