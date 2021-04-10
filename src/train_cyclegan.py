@@ -66,6 +66,8 @@ parser.add_argument("--discriminators-learning-rate-decay", type=float,
                                   " second argument determines period of learning rate deacy.")
 args = parser.parse_args()
 
+writer.add_text("Parameters", text_string=str(args))
+
 os.sys.path.append(config.project_root)
 
 rotation = None
