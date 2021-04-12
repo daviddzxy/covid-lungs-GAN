@@ -2,6 +2,8 @@ import numpy as np
 import random
 from torch import from_numpy
 from scipy import ndimage
+from scipy.ndimage.morphology import binary_erosion
+import matplotlib.pyplot as plt
 
 
 class SelectCovidSlices:
@@ -229,3 +231,15 @@ class Normalize:
         ndarray[ndarray > self.max] = self.max
         ndarray[ndarray < self.min] = self.min
         return 2 * ((ndarray - self.min) / (self.max - self.min)) - 1
+
+
+class Boundary:
+    def __init__(self, value_to_erode, iterations):
+        self.value_to_erode = value_to_erode
+        self.iterations = iterations
+
+    def __call__(self, image):
+        image[image != self.value_to_erode] = 0
+        eroded = image.copy()
+        eroded = binary_erosion(eroded, iterations=self.iterations)
+        return image - eroded * self.value_to_erode

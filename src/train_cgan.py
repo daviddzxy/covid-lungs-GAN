@@ -8,12 +8,11 @@ from datasets import CoivdLungMaskLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, create_figure, log_images, log_heatmap, scale, mae
-from transformations import Rotation, Crop, ApplyMask, Normalize
+from transformations import Rotation, Crop, ApplyMask, Normalize, Boundary
 import config
 import argparse
 import matplotlib.pyplot as plt
 from config import cgan_parameters as parameters
-from torchsummary import summary
 
 start_time = datetime.today().strftime('%d-%m-%Y-%H-%M-%S')
 writer = SummaryWriter(log_dir=os.path.join(config.tensorboard_logs, start_time))
@@ -22,8 +21,6 @@ parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
 parser.add_argument("-b", "--batch-size", default=parameters["batch_size"], type=int,
                     help="Set batch size.")
-parser.add_argument("--gpu", default=parameters["gpu"], nargs="?",
-                    help="Use graphics card during training.")
 parser.add_argument("--generator", default=parameters["generator"], nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generator", default=parameters["learning_rate_generator"], type=float,
@@ -38,8 +35,6 @@ parser.add_argument("--filters-discriminator", default=parameters["filters_discr
                     help="Set multiplier of convolutional filters in discriminator.")
 parser.add_argument("--depth-discriminator", default=parameters["depth_discriminator"], type=int,
                     help="Set number of convolutional layers in discriminator.")
-parser.add_argument("--save-model", default=parameters["save_model"], nargs="?",
-                    help="Turn on model saving.")
 parser.add_argument("--load-model", default="", nargs="?",
                     help="Load saved model from model_path directory. Enter filename as argument.")
 parser.add_argument("--rotation", type=int, default=parameters["rotation"],
@@ -63,6 +58,8 @@ parser.add_argument("--generator-normalization", type=str, default=parameters["g
 parser.add_argument("--discriminator-normalization", type=str, default=parameters["d_norm_layer"],
                     nargs="?", choices=["batch_norm", "instance_norm", "none"],
                     help="Set type of normalization layer in discriminator.")
+parser.add_argument("--boundary-transform", default=parameters["boundary_transform"], action='store_true',
+                    help="Turn on boundary transforms, that transforms covid mask.")
 args = parser.parse_args()
 
 writer.add_text("Parameters", text_string=str(args))
@@ -77,6 +74,12 @@ crop = None
 if args.crop != 0:
     crop = Crop([args.crop, args.crop])
 
+boundary = None
+if args.boundary_transform:
+    boundary = Boundary(value_to_erode=config.mask_values["covid_tissue"], iterations=parameters["iterations"])
+
+
+
 normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max"])
 mask_lungs = ApplyMask(config.mask_values["non_lung_tissue"])
 mask_covid = ApplyMask(config.mask_values["covid_tissue"], args.mask_covid)
@@ -87,15 +90,16 @@ dataset = CoivdLungMaskLungDataset(images=config.cgan_data_train,
                                    max_rotation=max_rotation,
                                    rotation=rotation,
                                    crop=crop,
-                                   normalize=normalize)
+                                   normalize=normalize,
+                                   boundary=boundary)
 
 valid_dataset = CoivdLungMaskLungDataset(images=config.cgan_data_test, mask_covid=mask_covid, normalize=normalize)
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
-valid_dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
+valid_dataloader = DataLoader(valid_dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
-device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 generator = None
 if args.generator == "Unet":

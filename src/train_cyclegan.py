@@ -22,8 +22,6 @@ parser.add_argument("-e", "--epochs", default=parameters["epochs"], type=int,
                     help="Set number of epochs.")
 parser.add_argument("-b", "--batch-size", default=parameters["batch_size"], type=int,
                     help="Set batch size.")
-parser.add_argument("--gpu", default=parameters["gpu"], nargs="?",
-                    help="Use graphics card during training.")
 parser.add_argument("--generator", default=parameters["generators"], nargs="?", choices=["Unet", "Resnet"],
                     help="Use graphics card during training.")
 parser.add_argument("--learning-rate-generators", default=parameters["learning_rate_generators"], type=float,
@@ -97,7 +95,7 @@ dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.ba
 
 valid_dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
-device = torch.device("cuda:0" if torch.cuda.is_available() and args.gpu else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 if args.generator == "Unet":
     netG_A2B = UnetGenerator2D(depth=args.depth_generators,

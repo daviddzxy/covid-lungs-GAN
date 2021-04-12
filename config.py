@@ -60,7 +60,6 @@ cyclegan_parameters = {
     "depth_generators": 5,
     "filters_discriminators": 20,
     "depth_discriminators": 2,
-    "gpu": True,
     "generator_learning_decay": [1.0, 1],
     "discriminator_learning_decay": [1.0, 1],
     "random_rotation": 8,
@@ -88,7 +87,6 @@ cyclegan_parameters_covidlungmask = {
     "depth_generators": 5,
     "filters_discriminators": 20,
     "depth_discriminators": 2,
-    "gpu": True,
     "generator_learning_decay": [1.0, 1],
     "discriminator_learning_decay": [1.0, 1],
     "rotation": 8,
@@ -115,8 +113,6 @@ cgan_parameters = {
     "depth_generator": 5,
     "filters_discriminator": 20,
     "depth_discriminator": 2,
-    "gpu": True,
-    "save_model": True,
     "rotation": 8,
     "crop": 256,
     "mask_covid": 2,
@@ -125,5 +121,7 @@ cgan_parameters = {
     "generator_learning_decay": [1.0, 1],
     "discriminator_learning_decay": [1.0, 1],
     "g_norm_layer": "batch_norm",
-    "d_norm_layer": "none"
+    "d_norm_layer": "none",
+    "boundary_transform": False,
+    "iterations": 6
 }
