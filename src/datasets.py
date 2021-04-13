@@ -49,7 +49,7 @@ class CovidLungHealthyLungDataset(Dataset):
 
 class CoivdLungMaskLungDataset(Dataset):
     def __init__(self, images, mask_covid, mask_lungs=None, max_rotation=None, rotation=None, crop=None,
-                 normalize=None):
+                 normalize=None, boundary=None):
         self.dir = images
         self.files = os.listdir(images)
         self.mask_covid = mask_covid
@@ -58,6 +58,7 @@ class CoivdLungMaskLungDataset(Dataset):
         self.rotate = rotation
         self.crop = crop
         self.normalize = normalize
+        self.boundary = boundary
         self.to_tensor = ToTensor()
 
     def __getitem__(self, index):
@@ -69,6 +70,9 @@ class CoivdLungMaskLungDataset(Dataset):
 
         if self.mask_lungs:
             image = self.mask_lungs(image, image_mask)
+
+        if self.boundary:
+            image_mask = self.boundary(image_mask)
 
         masked_image = self.mask_covid(image, image_mask)
 
@@ -85,4 +89,3 @@ class CoivdLungMaskLungDataset(Dataset):
 
     def __len__(self):
         return len(self.files)
-
