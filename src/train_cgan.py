@@ -94,7 +94,7 @@ dataset = CoivdLungMaskLungDataset(images=config.cgan_data_train,
                                    boundary=boundary)
 
 valid_dataset = CoivdLungMaskLungDataset(images=config.cgan_data_test, mask_covid=mask_covid, mask_lungs=mask_lungs,
-                                         normalize=normalize)
+                                         crop=crop, normalize=normalize)
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
