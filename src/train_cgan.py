@@ -140,7 +140,7 @@ total_batch_counter = 0
 for epoch in range(0, args.epochs):
     print("Current epoch {}.".format(epoch))
     for i, data in enumerate(dataloader):
-        image, masked_image, _ = data
+        image, masked_image, mask = data
         image, masked_image = image.float().to(device), masked_image.float().to(device)
         fake_image = generator(masked_image)
         optimizer_D.zero_grad()
@@ -185,17 +185,17 @@ for epoch in range(0, args.epochs):
         masked_image = masked_image.cpu().numpy()
         fake_image = fake_image.cpu().numpy()
         image = image.cpu().numpy()
-        l1_diff = mae(scale(image,
-                            config.cgan_parameters["min"],
-                            config.cgan_parameters["max"],
-                            mask=masked_image,
-                            mask_val=config.mask_values["non_lung_tissue"]),
-                      scale(fake_image,
-                            config.cgan_parameters["min"],
-                            config.cgan_parameters["max"],
-                            mask=masked_image,
-                            mask_val=config.mask_values["non_lung_tissue"]),
-                      mask=masked_image,
+        mask = mask.cpu().numpy()
+
+        image = scale(image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        fake_image = scale(fake_image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        masked_image = scale(masked_image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        image = mask_lungs(image, mask)
+        fake_image = mask_lungs(fake_image, mask)
+
+        l1_diff = mae(image,
+                      fake_image,
+                      mask=mask,
                       mask_val=config.mask_values["non_lung_tissue"])
         writer.add_scalar("L1 diff/Train", l1_diff, epoch)
 
@@ -221,23 +221,18 @@ for epoch in range(0, args.epochs):
         valid_masked_image = valid_masked_image.float().detach().cpu().numpy()
         valid_fake_image = valid_fake_image.detach().cpu().numpy()
 
+        log_data(valid_fake_image, config.image_logs, run_id=start_time, step=epoch, context="raw_fake")
+
+        valid_image = scale(valid_image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        valid_fake_image = scale(valid_fake_image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        valid_masked_image = scale(valid_masked_image, config.cgan_parameters["min"], config.cgan_parameters["max"], -1, 1)
+        valid_image = mask_lungs(valid_image, valid_mask)
         valid_fake_image = mask_lungs(valid_fake_image, valid_mask)
 
-        log_data(valid_fake_image, config.image_logs, run_id=start_time, step=epoch, context="raw")
-
         l1_diff = mae(
-            scale(valid_image,
-                  config.cgan_parameters["min"],
-                  config.cgan_parameters["max"],
-                  mask=valid_masked_image,
-                  mask_val=config.mask_values["non_lung_tissue"]),
-            scale(valid_fake_image,
-                  config.cgan_parameters["min"],
-                  config.cgan_parameters["max"],
-                  mask=valid_masked_image,
-                  mask_val=config.mask_values["non_lung_tissue"]
-                  ),
-            mask=valid_masked_image,
+            valid_image,
+            valid_fake_image,
+            mask=valid_mask,
             mask_val=config.mask_values["non_lung_tissue"])
 
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
@@ -249,10 +244,8 @@ for epoch in range(0, args.epochs):
                    context="valid",
                    figsize=(12, 4))
 
-        log_heatmap(scale(valid_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image, mask_val=config.mask_values["non_lung_tissue"]),
-                    scale(valid_fake_image, config.cgan_parameters["min"], config.cgan_parameters["max"],
-                          mask=valid_masked_image, mask_val=config.mask_values["non_lung_tissue"]),
+        log_heatmap(valid_image,
+                    valid_fake_image,
                     path=config.image_logs,
                     run_id=start_time,
                     step=epoch,

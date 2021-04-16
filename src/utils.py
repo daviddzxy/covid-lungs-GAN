@@ -69,9 +69,9 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
         plt.savefig(os.path.join(curr_dir, context, step, str(i)), format="png")
 
 
-def scale(image, interval_a, interval_b, mask, mask_val):
-    return ((interval_b - interval_a) * ((image - np.amin(a=image, where=mask!=mask_val, initial=10000)) / (np.amax(a=image, where=mask!=mask_val, initial=-10000) - np.amin(a=image, where=mask!=mask_val, initial=10000)))) + interval_a
-#toto treba prerobit, pretoze, teraz najvyssiu hodnotu da na 100(napr 0.95), ale ja  chcem aby to hodnotu 1 dalo na 100
+def scale(image, interval_a, interval_b, min, max):
+    return ((interval_b - interval_a) * ((image - min) / (max - min))) + interval_a
+
 
 def mae(image_a, image_b, mask, mask_val):
     diff = np.abs(image_a - image_b)
