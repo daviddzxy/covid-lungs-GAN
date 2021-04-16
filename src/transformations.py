@@ -233,13 +233,18 @@ class Normalize:
         return 2 * ((ndarray - self.min) / (self.max - self.min)) - 1
 
 
-class Boundary:
-    def __init__(self, value_to_erode, iterations):
+class TransformMaskToBoundary:
+    def __init__(self, value_to_erode, fill_with_value, iterations, lung_values):
         self.value_to_erode = value_to_erode
         self.iterations = iterations
+        self.fill_with_value = fill_with_value
+        self.lung_values = lung_values
 
-    def __call__(self, image):
-        image[image != self.value_to_erode] = 0
-        eroded = image.copy()
+    def __call__(self, mask):
+        covid_mask = mask.copy()
+        covid_mask[mask != self.value_to_erode] = 0
+        eroded = covid_mask.copy()
         eroded = binary_erosion(eroded, iterations=self.iterations)
-        return image - eroded * self.value_to_erode
+        eroded = covid_mask - eroded * self.value_to_erode
+        mask = np.where(np.isin(mask, self.value_to_erode), self.fill_with_value, mask)
+        return np.where(eroded == self.value_to_erode, eroded, mask)

@@ -8,7 +8,7 @@ from datasets import CoivdLungMaskLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
 from utils import weights_init, create_figure, log_images, log_heatmap, log_data, scale, mae
-from transformations import Rotation, Crop, ApplyMask, Normalize, Boundary
+from transformations import Rotation, Crop, ApplyMask, Normalize, TransformMaskToBoundary
 import config
 import argparse
 import matplotlib.pyplot as plt
@@ -75,9 +75,14 @@ if args.crop != 0:
     crop = Crop([args.crop, args.crop])
 
 boundary = None
+lung_values = None
 if args.boundary_transform:
-    boundary = Boundary(value_to_erode=config.mask_values["covid_tissue"], iterations=parameters["iterations"])
+    lung_values = [config.mask_values["right_lung"], config.mask_values["left_lung"]]
 
+    boundary = TransformMaskToBoundary(value_to_erode=config.mask_values["covid_tissue"],
+                                       iterations=parameters["iterations"],
+                                       fill_with_value=config.mask_values["right_lung"],
+                                       lung_values=lung_values)
 
 
 normalize = Normalize(config.cgan_parameters["min"], config.cgan_parameters["max"])
@@ -91,7 +96,8 @@ dataset = CoivdLungMaskLungDataset(images=config.cgan_data_train,
                                    rotation=rotation,
                                    crop=crop,
                                    normalize=normalize,
-                                   boundary=boundary)
+                                   boundary=boundary,
+                                   lung_values=lung_values)
 
 valid_dataset = CoivdLungMaskLungDataset(images=config.cgan_data_test, mask_covid=mask_covid, mask_lungs=mask_lungs,
                                          crop=crop, normalize=normalize)
