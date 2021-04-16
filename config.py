@@ -43,7 +43,9 @@ min_covid_pixels = 100
 
 mask_values = {
     "covid_tissue": 3,
-    "non_lung_tissue": 0
+    "non_lung_tissue": 0,
+    "left_lung": 1,
+    "right_lung": 2
 }
 
 #  training parameters
