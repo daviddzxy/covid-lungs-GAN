@@ -140,7 +140,7 @@ total_batch_counter = 0
 for epoch in range(0, args.epochs):
     print("Current epoch {}.".format(epoch))
     for i, data in enumerate(dataloader):
-        image, masked_image = data
+        image, masked_image, _ = data
         image, masked_image = image.float().to(device), masked_image.float().to(device)
         fake_image = generator(masked_image)
         optimizer_D.zero_grad()
@@ -213,13 +213,15 @@ for epoch in range(0, args.epochs):
                    figsize=(12, 4))
 
         data = next(iter(valid_dataloader))
-        valid_image, valid_masked_image = data
+        valid_image, valid_masked_image, valid_mask = data
         valid_image, valid_masked_image = valid_image.float().to(device), valid_masked_image.float().to(device)
         generator.eval()
         valid_fake_image = generator(valid_masked_image)
         valid_image = valid_image.float().detach().cpu().numpy()
         valid_masked_image = valid_masked_image.float().detach().cpu().numpy()
         valid_fake_image = valid_fake_image.detach().cpu().numpy()
+
+        valid_fake_image = mask_lungs(valid_fake_image, valid_mask)
 
         log_data(valid_fake_image, config.image_logs, run_id=start_time, step=epoch, context="raw")
 
@@ -240,7 +242,7 @@ for epoch in range(0, args.epochs):
 
         writer.add_scalar("L1 diff/Valid", l1_diff, epoch)
         generator.train()
-        log_images([valid_masked_image, mask_lungs(valid_fake_image, valid_masked_image), valid_image],
+        log_images([valid_masked_image, valid_fake_image, valid_image],
                    path=config.image_logs,
                    run_id=start_time,
                    step=epoch,

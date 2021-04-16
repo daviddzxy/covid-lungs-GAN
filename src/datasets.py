@@ -78,14 +78,15 @@ class CoivdLungMaskLungDataset(Dataset):
 
         if self.rotate:
             rand_angle = random.randint(-self.max_rotation, self.max_rotation)
-            image, masked_image = self.rotate(image, rand_angle), self.rotate(masked_image, rand_angle)
+            image, masked_image, image_mask = self.rotate(image, rand_angle), self.rotate(masked_image, rand_angle),\
+                                              self.rotate(image_mask, rand_angle)
 
         if self.crop:
-            image, masked_image = self.crop(image), self.crop(masked_image)
+            image, masked_image, image_mask = self.crop(image), self.crop(masked_image), self.crop(image_mask)
 
-        image, masked_image = self.to_tensor(image), self.to_tensor(masked_image)
+        image, masked_image, image_mask = self.to_tensor(image), self.to_tensor(masked_image), self.to_tensor(image_mask)
 
-        return image, masked_image
+        return image, masked_image, image_mask
 
     def __len__(self):
         return len(self.files)
