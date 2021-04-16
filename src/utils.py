@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import os
+import pickle
 import matplotlib.pyplot as plt
 
 
@@ -70,13 +71,27 @@ def log_heatmap(image_batches_A, image_batches_B, path, run_id, step, context, f
 
 def scale(image, interval_a, interval_b, mask, mask_val):
     return ((interval_b - interval_a) * ((image - np.amin(a=image, where=mask!=mask_val, initial=10000)) / (np.amax(a=image, where=mask!=mask_val, initial=-10000) - np.amin(a=image, where=mask!=mask_val, initial=10000)))) + interval_a
-
+#toto treba prerobit, pretoze, teraz najvyssiu hodnotu da na 100(napr 0.95), ale ja  chcem aby to hodnotu 1 dalo na 100
 
 def mae(image_a, image_b, mask, mask_val):
     diff = np.abs(image_a - image_b)
     _sum = np.sum(diff[mask != mask_val])
     n = len(mask[mask != mask_val])
     return _sum / n
+
+
+def log_data(data, path, run_id, step, context):
+    step = str(step)
+    curr_dir = os.path.join(path, run_id)
+    if not os.path.isdir(curr_dir):
+        os.mkdir(curr_dir)
+    if not os.path.isdir(os.path.join(curr_dir, context)):
+        os.mkdir(os.path.join(curr_dir, context))
+    if not os.path.isdir(os.path.join(curr_dir, context, step)):
+        os.mkdir(os.path.join(curr_dir, context, step))
+
+    with open(os.path.join(curr_dir, context, step, "slices.pkl"), "wb") as handle:
+        pickle.dump(data, handle)
 
 
 class Buffer():

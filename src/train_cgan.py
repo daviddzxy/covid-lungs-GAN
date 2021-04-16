@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from datasets import CoivdLungMaskLungDataset
 from generators import UnetGenerator2D, ResNetGenerator2D
 from discriminators import PatchGanDiscriminator
-from utils import weights_init, create_figure, log_images, log_heatmap, scale, mae
+from utils import weights_init, create_figure, log_images, log_heatmap, log_data, scale, mae
 from transformations import Rotation, Crop, ApplyMask, Normalize, Boundary
 import config
 import argparse
@@ -220,6 +220,9 @@ for epoch in range(0, args.epochs):
         valid_image = valid_image.float().detach().cpu().numpy()
         valid_masked_image = valid_masked_image.float().detach().cpu().numpy()
         valid_fake_image = valid_fake_image.detach().cpu().numpy()
+
+        log_data(valid_fake_image, config.image_logs, run_id=start_time, step=epoch, context="raw")
+
         l1_diff = mae(
             scale(valid_image,
                   config.cgan_parameters["min"],
@@ -253,6 +256,7 @@ for epoch in range(0, args.epochs):
                     step=epoch,
                     context="heat",
                     figsize=(14, 5))
+
     plt.close("all")
     plt.clf()
     plt.cla()
