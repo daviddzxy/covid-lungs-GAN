@@ -1,5 +1,5 @@
 from torch import nn, cat
-from network_parts import DoubleConv, ResidualBlock
+from network_parts import DoubleConv, ResidualBlock, Conv
 
 
 class UnetGenerator2D(nn.Module):
@@ -81,9 +81,14 @@ class ResNetGenerator2D(nn.Module):
         elif norm == "none":
             norm = None
 
-        layers = []
         in_channels = 1
         out_channles = filters
+
+        layers = [Conv(in_channels, out_channles, kernel_size=3, stride=1, padding=1, norm=norm, activ=nn.ReLU(inplace=True))]
+
+        in_channels = out_channles
+        out_channles = 2 * out_channles
+
         #  downsampling path
         for i in range(0, scale_depth):
             layers += [
@@ -120,11 +125,11 @@ class ResNetGenerator2D(nn.Module):
 
         layers += [
             nn.ConvTranspose2d(in_channels=in_channels,
-                               out_channels=1,
+                               out_channels=in_channels // 2,
                                kernel_size=4,
                                stride=2,
                                padding=1),
-            nn.Tanh()
+            Conv(in_channels=in_channels//2, kernel_size=3, stride=1, padding=1, norm=norm, activ=nn.Tanh(), out_channels=1)
         ]
 
         self.layers = nn.Sequential(*layers)
