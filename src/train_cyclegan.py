@@ -93,7 +93,7 @@ valid_dataset = CovidLungHealthyLungDataset(images_A=config.cyclegan_data_test["
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
-valid_dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
+valid_dataloader = DataLoader(valid_dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
