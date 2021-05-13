@@ -89,6 +89,7 @@ dataset = CovidLungHealthyLungDataset(images_A=config.cyclegan_data_train["A"],
 valid_dataset = CovidLungHealthyLungDataset(images_A=config.cyclegan_data_test["A"],
                                             images_B=config.cyclegan_data_test["B"],
                                             mask=mask,
+                                            crop=crop,
                                             normalize=normalize)
 
 dataloader = DataLoader(dataset, shuffle=True, num_workers=1, batch_size=args.batch_size, drop_last=True)
